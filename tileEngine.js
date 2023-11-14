@@ -1,23 +1,11 @@
-let
-    context,
-    tileWidth = 80,
-    tileHeight = 80,
-    tileDrawX,
-    tileDrawY,
-    tileDrawOffsetX,
-    tileDrawOffsety,
-    camera = [JSON.parse('{"id":"0", "x":"0", "y":"0"}')],
-    cameraMoveXVel = 0,
-    cameraMoveYVel = 0,
-    renderWidth = 14,
-    renderHeight = 10,
-    mouseX,
-    mouseY,
-    mouseCameraX;
-const
-    tileDataWidth = 100,
-    tileDataHeight = 100;
-//images
+class Camera {
+    constructor(id) {
+        this.id = id
+        this.x = 0
+        this.y = 0
+        this.vec = [0, 0]
+    }
+}
 
 class Tile {
     constructor(name, additionalData) {
@@ -40,212 +28,166 @@ class Tile {
         this.image = new Image()
         this.image.src = `${name}.png`
         this.name = name
-        if (additionalData) Object.entries(additionalData).forEach(([k,v]) => {this[k]= v})
+        if (additionalData) Object.entries(additionalData).forEach(([k, v]) => { this[k] = v })
     }
     break() {
         console.log('breaking...')
     }
 }
 
+class Game {
+    /**
+     * @param {CanvasRenderingContext2D} context 
+     */
+    constructor(context) {
+        this.tileData = new Array();
+        this.context = context;
+        this.tileDefaults = { w: 80, h: 80, dx: null, dy: null, dox: null, doy: null };
+        /** @type {Map<number, Camera>} */
+        this.camera = new Map().set(0, new Camera(0));
+        this.mouse = { x: 0, y: 0, cx: 0, cy: 0 };
+        this.renderData = { w: 14, h: 10 };
+        /** @type {Map<string, Tile>} */
+        this.baseTiles = new Map()
+            .set('grass', new Tile('grass'))
+            .set('stone', new Tile('stone'))
+            .set('hayBale', new Tile('hayBale'))
+            .set('air', new Tile('air'))
+            .set('dirt', new Tile('dirt'))
+            .set('log', new Tile('log'))
+        this.pressedKeys = new Array()
+        this.tileDataDem = { w: 100, h: 100 };
+    }
+    update() {
+        this.camera.get(0).vec[0] = (this.pressedKeys.includes("d") - this.pressedKeys.includes("a")) * 10;
+        this.camera.get(0).vec[1] = (this.pressedKeys.includes("s") - this.pressedKeys.includes("w")) * 10;
+        //cameraMoveXVel -= cameraMoveXVel/20;
+        //cameraMoveYVel -= cameraMoveYVel/20;
+        if (Math.abs(this.camera.get(0).vec[0]) < 0.4) this.camera.get(0).vec[0] = 0;
+        if (Math.abs(this.camera.get(0).vec[1]) < 0.4) this.camera.get(0).vec[1] = 0;
+        this.camera.get(0).x += this.camera.get(0).vec[0];
+        this.camera.get(0).y += this.camera.get(0).vec[1];
+        this.context.fillStyle = "black";
+        this.context.fillRect(0, 0, board.width, board.height);
+        let cameraBorder = ((x, y, bl, bd, br, bt) => ({ x: ((x < bl) ? bl : (x > br) ? br : x), y: ((y > bd) ? bd : (y < bt) ? bt : y) }))(this.camera.get(0).x, this.camera.get(0).y, 0, 0, (this.tileDataDem.w * this.tileDefaults.w) - board.width, -((this.tileDataDem.h * this.tileDefaults.h) - board.height));
+        this.camera.get(0).x = cameraBorder.x;
+        this.camera.get(0).y = cameraBorder.y
+        // let selectedTile = getTileDataIndex(getMouseCameraPosition(0).x, getMouseCameraPosition(0).y);
+        this.drawTiles();
+    }
+    drawTiles() {
+        this.tileDefaults.dox = (Math.round(this.camera.get(0).x / (this.tileDefaults.w)) * (this.tileDefaults.w)) - this.camera.get(0).x - this.tileDefaults.w;// minused by tile width to avoid showing border space
+        this.tileDefaults.doy = (Math.round(this.camera.get(0).y / (this.tileDefaults.h)) * (this.tileDefaults.h)) - this.camera.get(0).y + board.height;
+        this.tileDefaults.dx = 0;
+        this.tileDefaults.dy = 0;
+        for (let i = 0; i < this.renderData.h; i++) {
+            for (let v = 0; v < this.renderData.w; v++) {
+                if (this.tileDefaults.dox + (this.tileDefaults.dx * this.tileDefaults.w) > -this.tileDefaults.w && this.tileDefaults.dox + (this.tileDefaults.dx * this.tileDefaults.w) < 960) {
+                    let currentTile = this.tileData[this.tileDefaults.dx + Math.round(this.camera.get(0).x / this.tileDefaults.w) - 1][this.tileDefaults.dy - Math.round(this.camera.get(0).y / this.tileDefaults.h) - 1]; //DEBUG needs to check if has an image key
+                    if (currentTile && currentTile.image != this.baseTiles.get('air').image) {
+                        this.context.drawImage(currentTile.image, this.tileDefaults.dox + (this.tileDefaults.dx * this.tileDefaults.w), this.tileDefaults.doy + (-this.tileDefaults.dy * this.tileDefaults.h), 80, 80);
+                    }
+                    //this.context.fillRect(this.tileDefaults.dox + (this.tileDefaults.dx * this.tileDefaults.h), this.tileDefaults.doy + (-this.tileDefaults.dy * this.tileDefaults.h), this.tileDefaults.w, this.tileDefaults.h);
+                }
+                ++this.tileDefaults.dx;
+            }
+            this.tileDefaults.dx = 0;
+            ++this.tileDefaults.dy;
+        }
+    }
+    getTileDataIndex = (x, y) => ({ x: Math.round((x + 40) / this.tileDefaults.w) - 1, y: -Math.round((y + 60) / this.tileDefaults.h) + 7 });
+    getMouseCameraPosition = (id) =>({ x: this.mouse.x + this.camera.get(id).x, y: this.mouse.y + this.camera.get(id).y });
+    setTile(_x, _y, _tile) {
+        if (_x >= 0 && _x < this.tileDataDem.w && _y >= 0 && _y < this.tileDataDem.h) this.tileData[_x][_y] = _tile;
+    }
+    generateTree(_xOffset, _yOffset, _thickness, _iterations) {
+        this.setTile(_xOffset, _yOffset, this.baseTiles.get('log'))
+        let _x = 0;
+        let _y = 0;
+        for (let i = 0; i < 3; i++) {
+            ++_y;
+            let expand = Math.round(Math.random() * 2 - 1);
+            _x += (_x + _xOffset + expand >= 0 && _x + _xOffset + expand < this.tileDataDem.w) ? expand : 0;
+            this.setTile(_x + _xOffset - 1, _y + _yOffset, this.baseTiles.get('log'));
+            this.setTile(_x + _xOffset, _y + _yOffset, this.baseTiles.get('log'));
+            this.setTile(_x + _xOffset + 1, _y + _yOffset, this.baseTiles.get('log'));
+        }
+        if (_iterations > 0) {
+            this.generateTree(_x + _xOffset, _y + _yOffset, _thickness, _iterations - 1);
+        }
+    }
+    generateCircle(centerX, centerY, radius, tileType) {
+        for (let y = -radius; y <= radius; y++) {
+            for (let x = -radius; x <= radius; x++) {
+                // Check if the current tile is within the circle
+                if (x ** 2 + y ** 2 <= radius ** 2) {
+                    // Set the tile at the current position to the specified tile type
+                    this.setTile(centerX + x, centerY + y, tileType);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @type {HTMLCanvasElement}
+ */
+const board = document.getElementById("board")
+board.width = 960;
+board.height = 540;
+const context = board.getContext("2d");
+context.imageSmoothingEnabled = false;
+
+const game = new Game(context)
+
 // Add an event listener to the document for the mousemove event
 document.addEventListener('mousemove', function (event) {
-    // Get the mouse X and Y coordinates
-    mouseX = event.offsetX;
-    mouseY = event.offsetY;
-
-
-    // Log the mouse coordinates to the console
-    //console.log('Mouse X Coordinate:', mouseX);
-    //console.log('Mouse Y Coordinate:', mouseY);
+    game.mouse.x = event.offsetX;
+    game.mouse.y = event.offsetY;
 });
-
-
-
 
 //tile data, very important
 //datacontained in array, block data will be in json format eg). [[{},{}],[{},{}]]
-const tilePresets = {
-    grass: new Tile('grass'),
-    stone: new Tile('stone'),
-    hayBale: new Tile('hayBale'),
-    air: new Tile('air'),
-    dirt: new Tile('dirt'),
-    log: new Tile('log')
-};
-var tileData = [];
-
-for (let i = 0; i < tileDataHeight; i++) {
+for (let i = 0; i < game.tileDataDem.h; i++) {
     let genCol = [];
-    for (let v = 0; i < tileDataWidth; v++) {
-        genCol.push(tilePresets.dirt);
-    }
-    tileData.push(genCol);
+    for (let v = 0; v < game.tileDataDem.w; v++) genCol.push(game.baseTiles.get('dirt'));
+    game.tileData.push(genCol);
 }
 
-
-
-for (let _y = 0; _y < tileDataHeight; _y++) {
-    for (let _x = 0; _x < tileDataWidth; _x++) {
-        if (_y > (Math.sin(_x / 2) * 2) + 5) {
-            tileData[_x][_y] = tilePresets.air;
-        }
+for (let _y = 0; _y < game.tileDataDem.h; _y++) {
+    for (let _x = 0; _x < game.tileDataDem.w; _x++) {
+        if (_y > (Math.sin(_x / 2) * 2) + 5) game.tileData[_x][_y] = game.baseTiles.get('air');
     }
 }
 
-for (let _y = 0; _y < tileDataHeight; _y++) {
-    for (let _x = 0; _x < tileDataWidth; _x++) {
-
-        if (tileData[_x][_y + 1] == tilePresets.air && tileData[_x][_y] != tilePresets.air) {
-            tileData[_x][_y] = tilePresets.grass;
-        }
+for (let _y = 0; _y < game.tileDataDem.h; _y++) {
+    for (let _x = 0; _x < game.tileDataDem.w; _x++) {
+        if (
+            game.tileData[_x][_y + 1] == game.baseTiles.get('air') &&
+            game.tileData[_x][_y] != game.baseTiles.get('air')
+        ) game.tileData[_x][_y] = game.baseTiles.get('grass');
     }
 }
 
-for (let _y = 0; _y < tileDataHeight; _y++) {
-    for (let _x = 0; _x < tileDataWidth; _x++) {
-        if (tileData[_x][_y + 1] == tilePresets.air && tileData[_x][_y] != tilePresets.air && Math.random() > 0.8 && tileData[_x][_y] != tilePresets.log) {
-            generateTree(_x, _y, 2, 4);
-        }
+for (let _y = 0; _y < game.tileDataDem.h; _y++) {
+    for (let _x = 0; _x < game.tileDataDem.w; _x++) {
+        if (
+            game.tileData[_x][_y + 1] == game.baseTiles.get('air') &&
+            game.tileData[_x][_y] != game.baseTiles.get('air') &&
+            Math.random() > 0.8 &&
+            game.tileData[_x][_y] != game.baseTiles.get('log')
+        ) game.generateTree(_x, _y, 2, 4);
     }
 }
 
-generateCircle(10, 10, 5, tilePresets.stone)
-
-console.log(tileData);
-
-let pressedKeys = [];
+game.generateCircle(10, 10, 5, game.baseTiles.get('stone'))
 
 document.addEventListener('keydown', function (event) {
-    if (event.key.length === 1 && !pressedKeys.includes(event.key)) pressedKeys.push(event.key);
+    if (event.key.length === 1 && !game.pressedKeys.includes(event.key)) game.pressedKeys.push(event.key);
 });
 
 document.addEventListener('keyup', function (event) {
-    pressedKeys = pressedKeys.filter(key => key !== event.key);
+    game.pressedKeys = game.pressedKeys.filter(key => key !== event.key);
 });
 
-
-//board
-window.onload = function () {
-    board = document.getElementById("board");
-    board.width = 960;
-    board.height = 540;
-    context = board.getContext("2d");
-    context.imageSmoothingEnabled = false;
-    setInterval(update, 10);
-}
-
-function update() {
-    cameraMoveXVel = (pressedKeys.includes("d") - pressedKeys.includes("a")) * 10;
-    cameraMoveYVel = (pressedKeys.includes("s") - pressedKeys.includes("w")) * 10;
-    //cameraMoveXVel -= cameraMoveXVel/20;
-    //cameraMoveYVel -= cameraMoveYVel/20;
-    if (Math.abs(cameraMoveXVel) < 0.4) cameraMoveXVel = 0;
-    if (Math.abs(cameraMoveYVel) < 0.4) cameraMoveYVel = 0;
-    getCameraById(0).x += cameraMoveXVel;
-    getCameraById(0).y += cameraMoveYVel;
-    context.fillStyle = "black";
-    context.fillRect(0, 0, board.width, board.height);
-    let cameraBorder = positionBorder(getCameraById(0).x, getCameraById(0).y, 0, 0, (tileDataWidth * tileWidth) - board.width, -((tileDataHeight * tileHeight) - board.height));
-    getCameraById(0).x = cameraBorder.x;
-    getCameraById(0).y = cameraBorder.y;
-    // let selectedTile = getTileDataIndex(getMouseCameraPosition(0).x, getMouseCameraPosition(0).y);
-    drawTiles();
-}
-
-function getCameraById(_id) {
-    for (let i = 0; i < camera.length; i++) {
-        if (camera[i].id == _id) {
-            return camera[i];
-        }
-    }
-}
-
-function drawTiles() {
-    let tileDrawOffsetX = (Math.round(getCameraById(0).x / (tileWidth)) * (tileWidth)) - getCameraById(0).x - tileWidth;// minused by tile width to avoid showing border space
-    let tileDrawOffsetY = (Math.round(getCameraById(0).y / (tileHeight)) * (tileHeight)) - getCameraById(0).y + board.height;
-    tileDrawX = 0;
-    tileDrawY = 0;
-    for (let i = 0; i < renderHeight; i++) {
-        for (let v = 0; v < renderWidth; i++) {
-            if (tileDrawOffsetX + (tileDrawX * tileWidth) > -tileWidth && tileDrawOffsetX + (tileDrawX * tileWidth) < 960) {
-                let currentTile = tileData[tileDrawX + Math.round(getCameraById(0).x / tileWidth) - 1][tileDrawY - Math.round(getCameraById(0).y / tileHeight) - 1]; //DEBUG needs to check if has an image key
-                if (currentTile != undefined) {
-                    if (currentTile.image != tilePresets.air.image) {
-                        context.drawImage(currentTile.image, tileDrawOffsetX + (tileDrawX * tileWidth), tileDrawOffsetY + (-tileDrawY * tileHeight), 80, 80);
-                    }
-                }
-
-                //context.fillRect(tileDrawOffsetX + (tileDrawX * tileWidth), tileDrawOffsetY + (-tileDrawY * tileHeight), tileWidth, tileHeight);
-
-            }
-            tileDrawX += 1;
-        }
-        tileDrawX = 0;
-        tileDrawY += 1;
-    }
-}
-
-function positionBorder(_x, _y, _borderLeft, _borderDown, _borderRight, _borderTop) {
-    if (_x < _borderLeft) {
-        _x = _borderLeft; Math.round(_y / tileHeight)
-    }
-    if (_y > _borderDown) {
-        _y = _borderDown;
-    }
-    if (_x > _borderRight) {
-        _x = _borderRight;
-    }
-    if (_y < _borderTop) {
-        _y = _borderTop;
-    }
-    return { "x": _x, "y": _y };
-}
-
-function getTileDataIndex(_x, _y) {
-    return { "x": Math.round((_x + 40) / tileWidth) - 1, "y": -Math.round((_y + 60) / tileHeight) + 7 };
-}
-
-function getMouseCameraPosition(_camId) {
-    return { "x": mouseX + camera[_camId].x, "y": mouseY + camera[_camId].y };
-}
-
-function setTile(_x, _y, _tile, _array = tileData) {
-    if (_x >= 0 && _x < tileDataWidth && _y >= 0 && _y < tileDataHeight) {
-        _array[_x][_y] = _tile;
-    }
-
-
-}
-
-
-function generateTree(_xOffset, _yOffset, _thickness, _iterations) {
-    setTile(_xOffset, _yOffset, tilePresets.log)
-    let _x = 0;
-    let _y = 0;
-    for (let i = 0; i < 3; i++) {
-        _y += 1;
-        let expand = Math.round(Math.random() * 2 - 1);
-        _x += (_x + _xOffset + expand >= 0 && _x + _xOffset + expand < tileDataWidth) ? expand : 0;
-        setTile(_x + _xOffset - 1, _y + _yOffset, tilePresets.log);
-        setTile(_x + _xOffset, _y + _yOffset, tilePresets.log);
-        setTile(_x + _xOffset + 1, _y + _yOffset, tilePresets.log);
-    }
-    if (_iterations > 0) {
-        generateTree(_x + _xOffset, _y + _yOffset, _thickness, _iterations - 1);
-    }
-
-}
-
-
-//generated by github cop
-function generateCircle(centerX, centerY, radius, tileType) {
-    for (let y = -radius; y <= radius; y++) {
-        for (let x = -radius; x <= radius; x++) {
-            // Check if the current tile is within the circle
-            if (x * x + y * y <= radius * radius) {
-                // Set the tile at the current position to the specified tile type
-                setTile(centerX + x, centerY + y, tileType);
-            }
-        }
-    }
-}
+setInterval(_ => game.update(), 10)
