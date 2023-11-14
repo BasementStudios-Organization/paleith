@@ -23,11 +23,16 @@ const stoneImage = new Image();
 stoneImage.src = "stone.png";
 
 const hayBaleImage = new Image();
-hayBaleImage.src = "hayBale.png"
+hayBaleImage.src = "hayBale.png";
 
 const airImage = new Image();
-airImage.src = "air.png"
+airImage.src = "air.png";
 
+const dirtImage = new Image();
+dirtImage.src = "dirt.png";
+
+const logImage = new Image();
+logImage.src = "log.png";
 
 
 
@@ -52,39 +57,51 @@ const tilePresets = {
     "grass" : {"name" : "grass", "image": grassImage},
     "stone" : {"name" : "stone", "image": stoneImage},
     "hayBale" : {"name" : "hayBale", "image": hayBaleImage},
-    "air" : {"name" : "air", "image": airImage}
+    "air" : {"name" : "air", "image": airImage},
+    "dirt" : {"name" : "dirt", "image": dirtImage},
+    "log" : {"name" : "log", "image": logImage}
 };
 var tileData = [];
 
 for (let i = 0; i < tileDataHeight; i++) {
     let genCol = [];
     for (let i = 0; i < tileDataWidth; i++) {
-        genCol.push(Math.round(Math.random()) ? Math.round(Math.random()) ? tilePresets.stone : tilePresets.hayBale : tilePresets.grass);
+        genCol.push(tilePresets.dirt);
     }
     tileData.push(genCol);
 }
 
 
-var generateX = 0;
-var generateY = 0;
-for (let i = 0; i < tileDataHeight; i++) {
-    for (let i = 0; i < tileDataWidth; i++) {
-        
-        if (generateY > (Math.sin(generateX / 6) * 5) + 10) {
-            tileData[generateX][generateY] = tilePresets.air;
+
+for (let _y = 0; _y < tileDataHeight; _y++) {
+    for (let _x = 0; _x < tileDataWidth; _x++) {
+        if (_y > (Math.sin(_x / 2) * 2) + 5) {
+            tileData[_x][_y] = tilePresets.air;
         }
-        generateX += 1;
     }
-    generateX = 0;
-    generateY += 1; 
+}
+
+for (let _y = 0; _y < tileDataHeight; _y++) {
+    for (let _x = 0; _x < tileDataWidth; _x++) {
+        
+        if (tileData[_x][_y + 1] == tilePresets.air && tileData[_x][_y] != tilePresets.air) {
+            tileData[_x][_y] = tilePresets.grass;
+        }
+    }
+}
+
+for (let _y = 0; _y < tileDataHeight; _y++) {
+    for (let _x = 0; _x < tileDataWidth; _x++) {
+        
+        if (tileData[_x][_y + 1] == tilePresets.air && tileData[_x][_y] != tilePresets.air && Math.random() > 0.8 && tileData[_x][_y] != tilePresets.log) {
+            generateTree(_x, _y, 2, 4);
+        }
+    }
 }
 
 
 
-
-for (let i = 0; i < tileData.length; i++) {
-    console.log(tileData[i]);
-}
+console.log(tileData);
 
 
 let pressedKeys = [];
@@ -199,3 +216,29 @@ function getMouseCameraPosition (_camId) {
     return {"x" : mouseX + camera[_camId].x, "y" : mouseY + camera[_camId].y};
 }
 
+function setTile(_x, _y, _tile, _array = tileData) {
+    if (_x >= 0 && _x < tileDataWidth && _y >= 0 && _y < tileDataHeight) {
+        _array[_x][_y] = _tile;
+    }
+    
+
+}
+
+
+function generateTree(_xOffset, _yOffset, _thickness, _iterations) {
+    setTile(_xOffset, _yOffset, tilePresets.log)
+    let _x = 0;
+    let _y = 0;
+    for (let i = 0; i < 3; i++) {
+        _y += 1;
+        let expand = Math.round(Math.random() * 2 - 1);
+        _x += (_x + _xOffset + expand >= 0 && _x + _xOffset + expand < tileDataWidth) ? expand : 0;
+        setTile(_x + _xOffset - 1, _y + _yOffset, tilePresets.log);
+        setTile(_x + _xOffset, _y + _yOffset, tilePresets.log);
+        setTile(_x + _xOffset + 1, _y + _yOffset, tilePresets.log);
+    }
+    if (_iterations > 0) {
+        generateTree(_x + _xOffset, _y + _yOffset, _thickness, _iterations - 1);
+    }
+    
+}
