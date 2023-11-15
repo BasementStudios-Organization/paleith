@@ -170,7 +170,6 @@ class Game {
             }
         }
     }
-
     drawGUI() {
         const {round: r} = Math
         this.context.fillStyle = "white";
