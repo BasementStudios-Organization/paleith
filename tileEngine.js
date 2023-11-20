@@ -1,3 +1,4 @@
+//! cam borders are wonky again
 class Camera {
     constructor(id, _x = 0, _y = 0) {
         this.id = id
@@ -34,6 +35,8 @@ class Tile {
         this.image = new Image()
         this.image.src = `${name}.png`
         this.name = name
+        //! add an array of non solid preset blocks to check here
+        this.solid = name == 'air' || name == 'log' || name == 'leaves' ? false : true;
         if (additionalData) Object.entries(additionalData).forEach(([k, v]) => { this[k] = v })
     }
     breakBlock() {
@@ -49,7 +52,53 @@ class Block extends Tile {
 
 class Entity extends Tile {
     constructor(name, data) {
-        super(name, data)
+        super(name, data);
+        this.id = data.id || 0;
+        this.position = data.position || { x: 0, y: 0 };
+        this.velocity = data.velocity || { x: 0, y: 0 };
+        this.hitBox = data.hitBox || { bl: 6, bb: 28, br: 14, bt: 0, bW: 14, bH: 28};
+        this.dim = data.dim || { w: 22, h: 28 };
+        this.physicsPresets = data.physicsPresets || 
+        {
+            gravity: 0.5,
+            friction: 0.5,
+            jumpHeight: 20
+        };
+    }
+    
+    entityPhysics() {
+        //this.position.x += (game.pressedKeys.includes("d") - game.pressedKeys.includes("a"))*10;
+        //this.position.y += (game.pressedKeys.includes("w") - game.pressedKeys.includes("s"))*10;
+        this.velocity.y -= this.physicsPresets.gravity;
+        // y coll
+        this.position.y += this.velocity.y;
+        if (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+            while (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+                this.position.y -= this.velocity.y;
+            }
+            this.velocity.y = 0;
+        }
+
+        //x coll
+        this.velocity.x -= this.velocity.x * this.physicsPresets.friction;
+        this.position.x += this.velocity.x;
+        if (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+            while (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+                this.position.x -= this.velocity.x;
+            }
+            this.velocity.x = 0;
+        }
+
+        //!set cam move it smwhere else latr
+        game.camera.get(0).x = this.position.x - 480 + (this.hitBox.bW * 2);
+        game.camera.get(0).y = -this.position.y + 270 + (this.hitBox.bH * 2);
+        
+    }
+    entityPlatformerInput() {
+        this.velocity.x += (game.pressedKeys.includes("d") - game.pressedKeys.includes("a")) * 5;
+        if (game.hitBoxCollision(this.position.x, this.position.y - 1, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+            this.velocity.y = game.pressedKeys.includes("w") * this.physicsPresets.jumpHeight;
+        }
     }
 }
 
@@ -58,7 +107,23 @@ class Game {
      * @param {CanvasRenderingContext2D} context 
      */
     constructor(context) {
+        
+
         this.tileData = new Array();
+        this.entityData = new Set();
+        //!grass isn't gonna be an entity but i need to test this
+        this.player = new Entity('player', { id: 0, position: { x: 100, y: 4000 }, velocity: { x: 1, y: 0 }});
+        this.entityData.add(this.player);
+
+        //gets entity player
+        this.entityData.forEach(entity => {
+            if (entity.name === 'player') {
+                this.player = entity;
+            }
+        });
+
+        
+        
         this.context = context;
         this.tileDefaults = {
             /** Width */         w: 80,
@@ -66,10 +131,18 @@ class Game {
             /** DrawOffsetX */   dox: null,
             /** DrawOffsetY */   doy: null
         };
+
+
         /** @type {Map<number, Camera>} */
         this.camera = new Map().set(0, new Camera(0, 0, -1600));
         this.mouse = { x: 0, y: 0, cx: 0, cy: 0 };
         this.renderData = { w: 12, h: 16 };
+
+        
+
+        
+
+
         /*
         3X4
         */
@@ -84,27 +157,42 @@ class Game {
             .set('leaves', new Tile('leaves'))
 
         this.pressedKeys = new Array()
-        this.tileDataDim = { w: 1000, h: 1000 };
+        this.tileDataDim = { w: 500, h: 100 };
         //controls the presets for level generation
         /**tileGenPresets*/
         this.tileGenPresets = {
             /** Water Level */
-            waterLvl: 20,
+            waterLvl: 10,
             hillLength: 0.25,
             hillExtreme: 4
         };
+        this.switchCamCoolDown = 0;
+        
         
     }
     
     update() {
-        this.camera.get(0).vec[0] = (this.pressedKeys.includes("d") - this.pressedKeys.includes("a")) * 16;
-        this.camera.get(0).vec[1] = (this.pressedKeys.includes("s") - this.pressedKeys.includes("w")) * 16;
+        
+        this.player.entityPhysics();
+        this.player.entityPlatformerInput();
+        //this.camera.get(0).vec[0] = (this.pressedKeys.includes("d") - this.pressedKeys.includes("a")) * 16;
+        //this.camera.get(0).vec[1] = (this.pressedKeys.includes("s") - this.pressedKeys.includes("w")) * 16;
         //cameraMoveXVel -= cameraMoveXVel/20;
         //cameraMoveYVel -= cameraMoveYVel/20;
         if (Math.abs(this.camera.get(0).vec[0]) < 0.4) this.camera.get(0).vec[0] = 0;
         if (Math.abs(this.camera.get(0).vec[1]) < 0.4) this.camera.get(0).vec[1] = 0;
         this.camera.get(0).x += this.camera.get(0).vec[0];
         this.camera.get(0).y += this.camera.get(0).vec[1];
+        if (this.pressedKeys.includes("p") && this.switchCamCoolDown < 0) {
+            this.camera.get(0).size = this.camera.get(0).size == 1 ? 0.5 : 1;
+            this.switchCamCoolDown = 100;
+        }
+        this.switchCamCoolDown -= 1;
+        
+        //temp tile size frame
+        this.tW = this.tileDefaults.w * this.camera.get(0).size;
+        this.tH = this.tileDefaults.h * this.camera.get(0).size;
+        
 
         this.context.fillStyle = "lightblue";
         this.context.fillRect(0, 0, board.width, board.height);
@@ -145,26 +233,38 @@ class Game {
         * Where both the 'ifTrue' section as well as the 'ifFalse` section can be functions or additional turnaries
         */
         //? These turnaries are used to then assign the camera x & y positions
+        
 
         if (this.camera.get(0).x < 0) this.camera.get(0).x = 0;
-        if (this.camera.get(0).x > (this.tileDataDim.w * this.tileDefaults.w) - this.camera.get(0).w) this.camera.get(0).x = (this.tileDataDim.w * this.tileDefaults.w) - this.camera.get(0).w;
+        if (this.camera.get(0).x > (this.tileDataDim.w * this.tW) - (this.camera.get(0).w * this.camera.get(0).size) * 2) this.camera.get(0).x = (this.tileDataDim.w * this.tW) - (this.camera.get(0).w);
         if (this.camera.get(0).y > 0) this.camera.get(0).y = 0;
-        if (this.camera.get(0).y < -(this.tileDataDim.h * this.tileDefaults.h) + this.camera.get(0).h) this.camera.get(0).y = -(this.tileDataDim.h * this.tileDefaults.h) + this.camera.get(0).h;
+        if (this.camera.get(0).y < -(this.tileDataDim.h * this.tH) + (this.camera.get(0).h * this.camera.get(0).size) * 2) this.camera.get(0).y = -(this.tileDataDim.h * this.tH) + (this.camera.get(0).h);
         // let selectedTile = getTileDataIndex(getMouseCameraPosition(0).x, getMouseCameraPosition(0).y);
         this.drawTiles();
+        this.drawEntity()
         this.drawGUI();
     }
+    //! entity position is in the top left corner of the entity
+    drawEntity() {
+        this.entityData.forEach(entity => {
+            this.context.drawImage(entity.image, (entity.position.x - this.camera.get(0).x) * this.camera.get(0).size, (-entity.position.y - this.camera.get(0).y) * this.camera.get(0).size + 540, (this.tW / 20) * this.player.dim.w, (this.tH / 20) * this.player.dim.h);
+        });
+    }
     drawTiles() {
-        this.camSize = this.camera.get(0).size;
-        this.tileDefaults.dox = (Math.round(this.camera.get(0).x / (this.tileDefaults.w)) * (this.tileDefaults.w)) - this.camera.get(0).x - this.tileDefaults.w;// minused by tile width to avoid showing border space
-        this.tileDefaults.doy = (Math.round(this.camera.get(0).y / (this.tileDefaults.h)) * (this.tileDefaults.h)) - this.camera.get(0).y + board.height;
         
-        for (let dy = 0; dy < (this.renderData.h / (this.tileDefaults.h / 80)) + 2; dy++) {
-            for (let dx = 0; dx < (this.renderData.w / (this.tileDefaults.w / 80)) + 2; dx++) {
-                if (this.tileDefaults.dox + (dx * this.tileDefaults.w) > -this.tileDefaults.w && this.tileDefaults.dox + (dx * this.tileDefaults.w) < 960) {
-                    let currentTile = this.tileData[dx + Math.round(this.camera.get(0).x / this.tileDefaults.w) - 1][dy - Math.round(this.camera.get(0).y / this.tileDefaults.h) - 1]; //DEBUG needs to check if has an image key
+
+        this.camSize = this.camera.get(0).size;
+        this.tileDefaults.dox = ((Math.round(this.camera.get(0).x * this.camSize / (this.tW)) * (this.tW)) - (this.camera.get(0).x * this.camSize) - this.tW);// minused by tile width to avoid showing border space
+        this.tileDefaults.doy = ((Math.round(this.camera.get(0).y * this.camSize / (this.tH)) * (this.tH)) - (this.camera.get(0).y * this.camSize) + board.height);
+        
+        
+        
+        for (let dy = 0; dy < (this.tH / (this.tH / 80)) + 2; dy++) {
+            for (let dx = 0; dx < (this.tW / (this.tW / 80)) + 2; dx++) {
+                if (this.tileDefaults.dox + (dx * this.tW) > -this.tW && this.tileDefaults.dox + (dx * this.tW) < 960) {
+                    let currentTile = this.tileData[dx + Math.round(this.camera.get(0).x * this.camSize / this.tW) - 1][dy - Math.round(this.camera.get(0).y * this.camSize / this.tH) - 1]; //DEBUG needs to check if has an image key
                     if (currentTile && currentTile != this.baseTiles.get('air')) {
-                        this.context.drawImage(currentTile.image, this.tileDefaults.dox + (dx * this.tileDefaults.w), this.tileDefaults.doy + (-dy * this.tileDefaults.h), this.tileDefaults.w, this.tileDefaults.h);
+                        this.context.drawImage(currentTile.image, this.tileDefaults.dox + (dx * this.tW), this.tileDefaults.doy + (-dy * this.tH), this.tW+0.5, this.tH+0.5); //0.5 is to fix the white lines
                     }
                 }
             }
@@ -174,10 +274,9 @@ class Game {
         const {round: r} = Math
         this.context.fillStyle = "white";
         this.context.font = 'bold 24px "Comic Sans MS", "Comic Sans", cursive'
-        this.context.fillText(`${r(this.camera.get(0).x / this.tileDefaults.w)}, ${r(Math.abs(this.camera.get(0).y / this.tileDefaults.h))}`, 30, 50);
+        this.context.fillText(`${r(this.camera.get(0).x)}, ${r(Math.abs(this.camera.get(0).y))}`, 30, 50);
     }
 
-    getTileDataIndex = (x, y) => ({ x: Math.round((x + 40) / this.tileDefaults.w) - 1, y: -Math.round((y + 60) / this.tileDefaults.h) + 7 });
 
     getMouseCameraPosition = (id) => ({ x: this.mouse.x + this.camera.get(id).x, y: this.mouse.y + this.camera.get(id).y });
     
@@ -249,6 +348,30 @@ class Game {
         }
         //game.generateSquare(1, 1, 10, 10, _tileType, true, true, false);
     }
+//! collision detection
+
+    getTileDataIndex = (x, y) => ({ x: Math.round((x + 40) / this.tileDefaults.w) - 1, y: -Math.round((y + 60) / this.tileDefaults.h) + 7 });
+
+    hitBoxCollision(_x, _y, _bl, _bb, _br, _bt) {
+        _bb += 320;
+        _bt += 450;
+        _br += 64;
+        let pointCheck = this.getTileDataIndex(_x + _bl, _y + _bt);
+        if (game.tileData[pointCheck.x][-pointCheck.y].solid == true) return true;
+        pointCheck = this.getTileDataIndex(_x + _bl, _y + _bb);
+        if (game.tileData[pointCheck.x][-pointCheck.y].solid == true) return true;
+        pointCheck = this.getTileDataIndex(_x + _br, _y + _bt);
+        if (game.tileData[pointCheck.x][-pointCheck.y].solid == true) return true;
+        pointCheck = this.getTileDataIndex(_x + _br, _y + _bb);
+        if (game.tileData[pointCheck.x][-pointCheck.y].solid == true) return true;
+        return false;
+    }
+
+
+    //! utils
+    randomRange(_min, _max, _round = false) {
+        return _round ? Math.round(Math.random()*(_max - _min) + _min) : Math.random()*(_max - _min) + _min;
+    }
 }
 
 
@@ -271,7 +394,7 @@ document.addEventListener('mousemove', function (event) {
 });
 
 //tile data, very important
-//datacontained in array, block data will be in json format eg). [[{},{}],[{},{}]]
+//data contained in array, block data will be in json format eg). [[{},{}],[{},{}]]
 //makes chunk of dirt
 for (let i = 0; i < game.tileDataDim.w; i++) {
     // let genCol = [];
@@ -282,9 +405,16 @@ for (let i = 0; i < game.tileDataDim.w; i++) {
 }
 
 //generates the hills
+this.smoothness = 6;
 for (let _y = 0; _y < game.tileDataDim.h; _y++) {
     for (let _x = 0; _x < game.tileDataDim.w; _x++) {
-        if (_y > (Math.sin(_x * game.tileGenPresets.hillLength) * game.tileGenPresets.hillExtreme) + game.tileGenPresets.waterLvl) {
+        this.smoothness += game.randomRange(-1, 1, true);
+        //avoids errors of cant div by 0
+        if (this.smoothness <= 0) this.smoothness = 1;
+        //avoids terrain from become too smooth or too steep
+        if (Math.abs(this.smoothness) > 6) this.smoothness = 10 * Math.sign(this.smoothness);
+        //removes dirt by replacing it with air according to the sin wave
+        if (_y /10 > (Math.sin(2*_x/8)*Math.cos(-2.5+_x/this.smoothness)) + game.tileGenPresets.waterLvl - 6) {
             game.setTile(_x, _y, game.baseTiles.get('air'));
         }
     }
@@ -308,10 +438,10 @@ for (let _y = 0; _y < game.tileDataDim.h; _y++) {
         if (
             game.tileData[_x][_y + 1] == game.baseTiles.get('air') &&
             game.tileData[_x][_y] != game.baseTiles.get('air') &&
-            Math.random() > 0.8 &&
+            Math.random() > 0.9 &&
             game.tileData[_x][_y] != game.baseTiles.get('log') &&
             game.tileData[_x][_y] != game.baseTiles.get('leaves')
-        ) game.generateTree(_x, _y, 2, 30);
+        ) game.generateTree(_x, _y, 2, 4);
     }
 }
 
@@ -320,6 +450,9 @@ for (let i = 0; i < 10; i++) {
     game.generateCircle(Math.round(Math.random()*game.tileDataDim.w), Math.round(Math.random()*game.tileGenPresets.waterLvl), 4, game.baseTiles.get('stone'), true)
 }
 
+
+//test block
+game.setTile(99, 0, game.baseTiles.get('hayBale'))
 //generates house
 //game.generateHouse(20, 20, 5, 5, game.baseTiles.get('hayBale'))
 
