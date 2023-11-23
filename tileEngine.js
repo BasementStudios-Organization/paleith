@@ -1,4 +1,4 @@
-//! cam borders are wonky again
+
 class Camera {
     constructor(id, _x = 0, _y = 0) {
         this.id = id
@@ -13,25 +13,6 @@ class Camera {
 
 class Tile {
     constructor(name, additionalData) {
-        //? Disabled as it interferes with new block additions
-        // switch (name) {
-        //     case 'grass':
-        //         break;
-        //     case 'air':
-        //         break;
-        //     case 'stone':
-        //         break;
-        //     case 'hayBale':
-        //         break;
-        //     case 'dirt':
-        //         break;
-        //     case 'log':
-        //         break;
-        //     case 'leaves':
-        //         break;
-        //     default:
-        //         throw new SyntaxError("Not a valid tile.")
-        // }
         this.image = new Image()
         this.image.src = `${name}.png`
         this.name = name
@@ -67,12 +48,12 @@ class Entity extends Tile {
         };
     }
     
-    entityPhysics(_fly = false) {
+    entityPhysics(_fly = false, _speed = 1) {
         
         
         if (_fly == true) {
-            this.position.x += (game.pressedKeys.includes("d") - game.pressedKeys.includes("a"));
-            this.position.y += (game.pressedKeys.includes("w") - game.pressedKeys.includes("s"));  
+            this.position.x += (game.pressedKeys.includes("d") - game.pressedKeys.includes("a")) * _speed;
+            this.position.y += (game.pressedKeys.includes("w") - game.pressedKeys.includes("s")) * _speed;
         } else {
             this.velocity.y -= this.physicsPresets.gravity;
             // y coll
@@ -104,8 +85,8 @@ class Entity extends Tile {
         
 
         //!set cam move it smwhere else latr
-        game.camera.get(0).x = this.position.x - 480 + (this.hitBox.bW * 2);
-        game.camera.get(0).y = -this.position.y + 270 + (this.hitBox.bH * 2);
+        game.camera.get(0).x += ((this.position.x - 480 + (this.hitBox.bW * 2)) - game.camera.get(0).x) / 5;
+        game.camera.get(0).y += ((-this.position.y + 270 + (this.hitBox.bH * 2)) - game.camera.get(0).y) / 10;
         
     }
     entityPlatformerInput() {
@@ -122,6 +103,10 @@ class Game {
      */
     constructor(context) {
         
+
+        //imgas
+        this.backgroundImage = new Image();
+        this.backgroundImage.src = 'background.png';
 
         this.tileData = new Array();
         this.entityData = new Set();
@@ -153,11 +138,6 @@ class Game {
         this.mouse = { x: 0, y: 0, cx: 0, cy: 0 };
         this.renderData = { w: 12, h: 16 };
 
-        
-
-        
-
-
         /*
         3X4
         */
@@ -172,7 +152,7 @@ class Game {
             .set('leaves', new Tile('leaves'))
             .set('woodPlatform', new Tile('woodPlatform'))
         this.pressedKeys = new Array()
-        this.tileDataDim = { w: 500, h: 100 };
+        this.tileDataDim = { w: 100, h: 100 };
         //controls the presets for level generation
         /**tileGenPresets*/
         this.tileGenPresets = {
@@ -190,6 +170,7 @@ class Game {
 
         this.player.entityPhysics();
         this.player.entityPlatformerInput();
+
         //this.camera.get(0).vec[0] = (this.pressedKeys.includes("d") - this.pressedKeys.includes("a")) * 16;
         //this.camera.get(0).vec[1] = (this.pressedKeys.includes("s") - this.pressedKeys.includes("w")) * 16;
         //cameraMoveXVel -= cameraMoveXVel/20;
@@ -209,57 +190,32 @@ class Game {
         this.tH = this.tileDefaults.h * this.camera.get(0).size;
         
 
-        this.context.fillStyle = "lightblue";
+        this.context.fillStyle = `hsl(240, 100, 50)`;
+        //!${-Math.round(this.camera.get(0).y/this.tH) * 4}
         this.context.fillRect(0, 0, board.width, board.height);
 
-        //!let cameraBorder = ((x, y, bl, bd, br, bt) => ({ x: ((x < bl) ? bl : (x > br) ? br : x), y: ((y > bd) ? bd : (y < bt) ? bt : y) }))(this.camera.get(0).x, this.camera.get(0).y, 0, 0, (this.tileDataDim.w ** 2) - board.width, -((this.tileDataDim.h ** 2) - board.height));
-        //!this.camera.get(0).x = cameraBorder.x;
-        //!this.camera.get(0).y = cameraBorder.y;
-        // this.camera.get(0).x =
-        //     //? first turnatry checks if x is less than 0
-        //     (this.camera.x < 0) ?
-        //         //? if it is, it then sets it to 0
-        //         0 :
-        //             //? otherwise, it uses an additional turnary in which it checks if the x pos is less than the tileDataDem width squared (delemiated as '** 2')
-        //             //? minus the width
-        //             (this.camera.get(0).x > (this.tileDataDim.w ** 2) - this.camera.get(0).w) ?
-        //                 //? again, if true:
-        //                 (this.tileDataDim.w * this.tileDefaults.w) - this.camera.get(0).w :
-        //                     //? otherwise, keep the inital value:
-        //                     this.camera.get(0).x;
-
-        // this.camera.get(0).y =
-        //     //? first turnatry checks if y is greater than 0
-        //     (this.camera.get(0).y > 0) ?
-        //         //? if it is, it then sets it to 0
-        //         0 :
-        //             //? otherwise, it uses an additional turnary in which it checks if the y pos is less than the tileDataDem highth squared (delemiated as '** 2')
-        //             //? minus the height
-        //             ((this.camera.get(0).y < (this.tileDataDim.h ** 2) - this.camera.get(0).h)) ?
-        //                 //? again, if true:
-        //                 (this.tileDataDim.h * this.tileDefaults.h) - this.camera.get(0).h :
-        //                     //? otherwise, keep the inital value:
-        //                     this.camera.get(0).y;
-
-        //? Using the turnaries above does the same thing as all of these "if statements"
-        //? Just as a reminder, turnaries look like the following:
-        /*
-        * (statementToCheck) ? ifTrue : ifFalse
-        * Where both the 'ifTrue' section as well as the 'ifFalse` section can be functions or additional turnaries
-        */
-        //? These turnaries are used to then assign the camera x & y positions
+        //let cameraBorder = ((x, y, bl, bd, br, bt) => ({ x: ((x < bl) ? bl : (x > br) ? br : x), y: ((y > bd) ? bd : (y < bt) ? bt : y) }))(this.camera.get(0).x, this.camera.get(0).y, 0, 0, (this.tileDataDim.w ** 2) - board.width, -((this.tileDataDim.h ** 2) - board.height));
+        //this.camera.get(0).x = cameraBorder.x;
+        //this.camera.get(0).y = cameraBorder.y;
+        
         
 
         if (this.camera.get(0).x < 0) this.camera.get(0).x = 0;
-        if (this.camera.get(0).x > (this.tileDataDim.w * this.tW) - (this.camera.get(0).w * this.camera.get(0).size) * 2) this.camera.get(0).x = (this.tileDataDim.w * this.tW) - (this.camera.get(0).w);
         if (this.camera.get(0).y > 0) this.camera.get(0).y = 0;
-        if (this.camera.get(0).y < -(this.tileDataDim.h * this.tH) + (this.camera.get(0).h * this.camera.get(0).size) * 2) this.camera.get(0).y = -(this.tileDataDim.h * this.tH) + (this.camera.get(0).h);
-        // let selectedTile = getTileDataIndex(getMouseCameraPosition(0).x, getMouseCameraPosition(0).y);
+        if (this.camera.get(0).x > (this.tileDataDim.w * 80) - this.camera.get(0).w / this.camera.get(0).size) this.camera.get(0).x = (this.tileDataDim.w * 80) - this.camera.get(0).w / this.camera.get(0).size;
+        if (this.camera.get(0).y < -(this.tileDataDim.h * 80) + this.camera.get(0).h / this.camera.get(0).size) this.camera.get(0).y = -(this.tileDataDim.h * 80) + this.camera.get(0).h / this.camera.get(0).size;
+        //let selectedTile = getTileDataIndex(getMouseCameraPosition(0).x, getMouseCameraPosition(0).y);
+        this.drawBackground();
         this.drawTiles();
         this.drawEntity()
         this.drawGUI();
+        if (this.pressedKeys.includes("click")) this.setTile(Math.round(this.getMouseCameraPosition(0).x/this.tW), Math.round(Math.abs(this.getMouseCameraPosition(0).y/this.tH)), this.baseTiles.get('leaves'), true);
+
     }
     //! entity position is in the top left corner of the entity
+    drawBackground() {
+        this.context.drawImage(this.backgroundImage, (-this.camera.get(0).x/10), (-this.camera.get(0).y/20) - 500, this.backgroundImage.width * 8, this.backgroundImage.height * 8);
+    }
     drawEntity() {
         this.entityData.forEach(entity => {
             this.context.drawImage(entity.image, (entity.position.x - this.camera.get(0).x) * this.camera.get(0).size, (-entity.position.y - this.camera.get(0).y) * this.camera.get(0).size + 540, (this.tW / 20) * this.player.dim.w, (this.tH / 20) * this.player.dim.h);
@@ -277,9 +233,17 @@ class Game {
         for (let dy = 0; dy < (this.tH / (this.tH / 80)) + 2; dy++) {
             for (let dx = 0; dx < (this.tW / (this.tW / 80)) + 2; dx++) {
                 if (this.tileDefaults.dox + (dx * this.tW) > -this.tW && this.tileDefaults.dox + (dx * this.tW) < 960) {
-                    let currentTile = this.tileData[dx + Math.round(this.camera.get(0).x * this.camSize / this.tW) - 1][dy - Math.round(this.camera.get(0).y * this.camSize / this.tH) - 1]; //DEBUG needs to check if has an image key
+                    let cTX = dx + Math.round(this.camera.get(0).x * this.camSize / this.tW) - 1;
+                    let cTY = dy - Math.round(this.camera.get(0).y * this.camSize / this.tH) - 1
+                    let currentTile = this.tileData[cTX][cTY]; //DEBUG needs to check if has an image key
                     if (currentTile && currentTile != this.baseTiles.get('air')) {
-                        this.context.drawImage(currentTile.image, this.tileDefaults.dox + (dx * this.tW), this.tileDefaults.doy + (-dy * this.tH), this.tW+0.5, this.tH+0.5); //0.5 is to fix the white lines
+                        let drawnImage = currentTile.image;
+                        if (currentTile == this.baseTiles.get('leaves')) {
+                            drawnImage = new Image();
+                            drawnImage.src = this.getTilesetImage(cTX, cTY, currentTile, [this.baseTiles.get('leaves'), this.baseTiles.get('log'), this.baseTiles.get('grass')]);
+                            if (drawnImage.src.endsWith('leaves.png')) drawnImage.src = 'leavesBerryVariant.png';
+                        }
+                        this.context.drawImage(drawnImage, this.tileDefaults.dox + (dx * this.tW), this.tileDefaults.doy + (-dy * this.tH), this.tW+0.5, this.tH+0.5); //0.5 is to fix the white lines
                     }
                 }
             }
@@ -287,13 +251,17 @@ class Game {
     }
     drawGUI() {
         const {round: r} = Math
-        this.context.fillStyle = "white";
-        this.context.font = 'bold 24px "Comic Sans MS", "Comic Sans", cursive'
-        this.context.fillText(`${r(this.camera.get(0).x/this.tW)}, ${r(Math.abs(this.camera.get(0).y/this.tH))}`, 30, 50);
+        this.context.font = 'bold 24px "Sans", "Courier", cursive'
+        this.drawTextBorder(`${r(this.camera.get(0).x/this.tW)}, ${r(Math.abs(this.camera.get(0).y/this.tH))}`, 30, 50, 'black', 'white', 2)
+        //this.context.fillStyle = "black";
+        
+        //this.context.fillText(`${r(this.camera.get(0).x/this.tW)}, ${r(Math.abs(this.camera.get(0).y/this.tH))}`, 30, 50);
+        //console.log(`${r(this.getMouseCameraPosition(0).x/this.tW)}, ${r(Math.abs(this.getMouseCameraPosition(0).y/this.tH))}`)
+        
     }
 
 
-    getMouseCameraPosition = (id) => ({ x: this.mouse.x + this.camera.get(id).x, y: this.mouse.y + this.camera.get(id).y });
+    getMouseCameraPosition = (id) => ({ x: this.mouse.x + this.camera.get(id).x - 40, y: this.mouse.y + this.camera.get(id).y - 500 });
     
     setTile(_x, _y, _tile, _overwrite = true) {
         if (_x >= 0 && _x < this.tileDataDim.w && _y >= 0 && _y < this.tileDataDim.h && (_overwrite == true || this.tileData[_x][_y] == this.baseTiles.get('air'))) {
@@ -319,7 +287,7 @@ class Game {
         else {
             for (let i = 0; i < 2; i++) {
                 
-                this.generateCircle(_x + _xOffset + Math.round(Math.random()*10)-5, _y + _yOffset, 5, this.baseTiles.get('leaves'));
+                this.generateCircle(_x + _xOffset + Math.round(Math.random()*10)-5, _y + _yOffset, 6, this.baseTiles.get('leaves'));
             }
         }
     }
@@ -382,19 +350,21 @@ class Game {
         return false;
     }
     //!tilesets
-    getTilesetImage(_x, _y, _type) {
+    getTilesetImage(_x, _y, _type, _connect) {
+        if (_x == 0 || _x >= game.tileDataDim.w) _x = 1;
+        if (_y == 0) _y = 1;
         //gets the code for the tileset
         let tlsCode = '';
-        if (this.tileData[_x][_y+1] == _type) tlsCode += '1';
+        if (_connect.includes(this.tileData[_x][_y+1])) tlsCode += '1';
         else tlsCode += '0';
 
-        if (this.tileData[_x-1][_y] == _type) tlsCode += '1';
+        if (_connect.includes(this.tileData[_x-1][_y])) tlsCode += '1';
         else tlsCode += '0';
 
-        if (this.tileData[_x+1][_y] == _type) tlsCode += '1';
+        if (_connect.includes(this.tileData[_x+1][_y])) tlsCode += '1';
         else tlsCode += '0';
 
-        if (this.tileData[_x][_y-1] == _type) tlsCode += '1';
+        if (_connect.includes(this.tileData[_x][_y-1])) tlsCode += '1';
         else tlsCode += '0';
         
         //gets the tileset image
@@ -421,6 +391,24 @@ class Game {
     //! utils
     randomRange(_min, _max, _round = false) {
         return _round ? Math.round(Math.random()*(_max - _min) + _min) : Math.random()*(_max - _min) + _min;
+    }
+
+    drawTextBorder(_text, _x, _y, _color, _borderColor, _borderSize) {
+        this.context.fillStyle = _borderColor;
+        //corners
+        this.context.fillText(_text, _x - _borderSize, _y - _borderSize);
+        this.context.fillText(_text, _x + _borderSize, _y - _borderSize);
+        this.context.fillText(_text, _x - _borderSize, _y + _borderSize);
+        this.context.fillText(_text, _x + _borderSize, _y + _borderSize);
+        //sides
+        this.context.fillText(_text, _x, _y - _borderSize);
+        this.context.fillText(_text, _x, _y + _borderSize);
+        this.context.fillText(_text, _x - _borderSize, _y);
+        this.context.fillText(_text, _x + _borderSize, _y);
+
+        this.context.fillStyle = _color;
+        this.context.fillText(_text, _x, _y);
+    
     }
 }
 
@@ -484,6 +472,9 @@ for (let _y = 0; _y < game.tileDataDim.h; _y++) {
     }
 }
 
+
+
+
 // generates trees
 for (let _y = 0; _y < game.tileDataDim.h; _y++) {
     for (let _x = 0; _x < game.tileDataDim.w; _x++) {
@@ -497,14 +488,24 @@ for (let _y = 0; _y < game.tileDataDim.h; _y++) {
     }
 }
 
+
+
 //generate stone in ground
 for (let i = 0; i < 10; i++) {
     game.generateCircle(Math.round(Math.random()*game.tileDataDim.w), Math.round(Math.random()*game.tileGenPresets.waterLvl), 4, game.baseTiles.get('stone'), true)
 }
 
+//generates caves
+for (let a = 0; a < game.randomRange(10, 20, true); a++) {
+    let x = game.randomRange(0, game.tileDataDim.w, true);
+    let y = game.tileGenPresets.waterLvl;
+    for (let i = 0; i < game.randomRange(4, 10, true); i++) {
+        game.generateCircle(x, y, game.randomRange(3, 6, true), game.baseTiles.get('air'));
+        x += game.randomRange(-5, 5, true);
+        y += game.randomRange(-5, 5, true);
+}
+}
 
-//adds platform
-game.setTile(10, 40, game.baseTiles.get('woodPlatform'))
 //generates house
 //game.generateHouse(20, 20, 5, 5, game.baseTiles.get('hayBale'))
 
@@ -515,5 +516,14 @@ document.addEventListener('keydown', function (event) {
 document.addEventListener('keyup', function (event) {
     game.pressedKeys = game.pressedKeys.filter(key => key !== event.key);
 });
+
+document.addEventListener('mousedown', function (event) {
+    if (!game.pressedKeys.includes(event.key)) game.pressedKeys.push("click");
+});
+
+document.addEventListener('mouseup', function (event) {
+    game.pressedKeys = game.pressedKeys.filter(key => key !== 'click');
+});
+
 
 setInterval(_ => game.update(), 100/6)
