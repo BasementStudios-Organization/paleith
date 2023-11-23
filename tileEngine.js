@@ -36,7 +36,8 @@ class Tile {
         this.image.src = `${name}.png`
         this.name = name
         //! add an array of non solid preset blocks to check here
-        this.solid = name == 'air' || name == 'log' || name == 'leaves' ? false : true;
+        this.solid = name == 'woodPlatform' || name == 'air' || name == 'log' || name == 'leaves' ? false : true;
+        this.platform = name == 'woodPlatform' ? true : false;
         if (additionalData) Object.entries(additionalData).forEach(([k, v]) => { this[k] = v })
     }
     breakBlock() {
@@ -66,28 +67,41 @@ class Entity extends Tile {
         };
     }
     
-    entityPhysics() {
-        //this.position.x += (game.pressedKeys.includes("d") - game.pressedKeys.includes("a"))*10;
-        //this.position.y += (game.pressedKeys.includes("w") - game.pressedKeys.includes("s"))*10;
-        this.velocity.y -= this.physicsPresets.gravity;
-        // y coll
-        this.position.y += this.velocity.y;
-        if (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
-            while (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
-                this.position.y -= this.velocity.y;
+    entityPhysics(_fly = false) {
+        
+        
+        if (_fly == true) {
+            this.position.x += (game.pressedKeys.includes("d") - game.pressedKeys.includes("a"));
+            this.position.y += (game.pressedKeys.includes("w") - game.pressedKeys.includes("s"));  
+        } else {
+            this.velocity.y -= this.physicsPresets.gravity;
+            // y coll
+            this.position.y += this.velocity.y;
+            //! change this to platform below based on hitBox
+            
+            
+            if (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+                
+                while (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+                    this.position.y -= this.velocity.y;
+                }
+                this.velocity.y = 0;
             }
-            this.velocity.y = 0;
-        }
 
-        //x coll
-        this.velocity.x -= this.velocity.x * this.physicsPresets.friction;
-        this.position.x += this.velocity.x;
-        if (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
-            while (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
-                this.position.x -= this.velocity.x;
+            
+    
+            //x coll
+            this.velocity.x -= this.velocity.x * this.physicsPresets.friction;
+            this.position.x += this.velocity.x;
+            if (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+                while (game.hitBoxCollision(this.position.x, this.position.y, this.hitBox.bl, this.hitBox.bb, this.hitBox.br, this.hitBox.bt)) {
+                    this.position.x -= this.velocity.x;
+                }
+                this.velocity.x = 0;
             }
-            this.velocity.x = 0;
         }
+        
+        
 
         //!set cam move it smwhere else latr
         game.camera.get(0).x = this.position.x - 480 + (this.hitBox.bW * 2);
@@ -112,9 +126,10 @@ class Game {
         this.tileData = new Array();
         this.entityData = new Set();
         //!grass isn't gonna be an entity but i need to test this
-        this.player = new Entity('player', { id: 0, position: { x: 100, y: 4000 }, velocity: { x: 1, y: 0 }});
+        this.player = new Entity('player', { id: 0, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 }});
         this.entityData.add(this.player);
 
+        this.tileSetDefaults = ['leaves'];
         //gets entity player
         this.entityData.forEach(entity => {
             if (entity.name === 'player') {
@@ -155,7 +170,7 @@ class Game {
             .set('dirt', new Tile('dirt'))
             .set('log', new Tile('log'))
             .set('leaves', new Tile('leaves'))
-
+            .set('woodPlatform', new Tile('woodPlatform'))
         this.pressedKeys = new Array()
         this.tileDataDim = { w: 500, h: 100 };
         //controls the presets for level generation
@@ -172,7 +187,7 @@ class Game {
     }
     
     update() {
-        
+
         this.player.entityPhysics();
         this.player.entityPlatformerInput();
         //this.camera.get(0).vec[0] = (this.pressedKeys.includes("d") - this.pressedKeys.includes("a")) * 16;
@@ -274,7 +289,7 @@ class Game {
         const {round: r} = Math
         this.context.fillStyle = "white";
         this.context.font = 'bold 24px "Comic Sans MS", "Comic Sans", cursive'
-        this.context.fillText(`${r(this.camera.get(0).x)}, ${r(Math.abs(this.camera.get(0).y))}`, 30, 50);
+        this.context.fillText(`${r(this.camera.get(0).x/this.tW)}, ${r(Math.abs(this.camera.get(0).y/this.tH))}`, 30, 50);
     }
 
 
@@ -352,21 +367,56 @@ class Game {
 
     getTileDataIndex = (x, y) => ({ x: Math.round((x + 40) / this.tileDefaults.w) - 1, y: -Math.round((y + 60) / this.tileDefaults.h) + 7 });
 
-    hitBoxCollision(_x, _y, _bl, _bb, _br, _bt) {
+    hitBoxCollision(_x, _y, _bl, _bb, _br, _bt, _key = 'solid', _val = true) {
         _bb += 320;
         _bt += 450;
         _br += 64;
         let pointCheck = this.getTileDataIndex(_x + _bl, _y + _bt);
-        if (game.tileData[pointCheck.x][-pointCheck.y].solid == true) return true;
+        if (game.tileData[pointCheck.x][-pointCheck.y][_key] == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _bl, _y + _bb);
-        if (game.tileData[pointCheck.x][-pointCheck.y].solid == true) return true;
+        if (game.tileData[pointCheck.x][-pointCheck.y][_key] == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _br, _y + _bt);
-        if (game.tileData[pointCheck.x][-pointCheck.y].solid == true) return true;
+        if (game.tileData[pointCheck.x][-pointCheck.y][_key] == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _br, _y + _bb);
-        if (game.tileData[pointCheck.x][-pointCheck.y].solid == true) return true;
+        if (game.tileData[pointCheck.x][-pointCheck.y][_key] == _val) return true;
         return false;
     }
+    //!tilesets
+    getTilesetImage(_x, _y, _type) {
+        //gets the code for the tileset
+        let tlsCode = '';
+        if (this.tileData[_x][_y+1] == _type) tlsCode += '1';
+        else tlsCode += '0';
 
+        if (this.tileData[_x-1][_y] == _type) tlsCode += '1';
+        else tlsCode += '0';
+
+        if (this.tileData[_x+1][_y] == _type) tlsCode += '1';
+        else tlsCode += '0';
+
+        if (this.tileData[_x][_y-1] == _type) tlsCode += '1';
+        else tlsCode += '0';
+        
+        //gets the tileset image
+        let n = _type.name;
+        if (tlsCode == '1111') return `${n}.png`;
+        if (tlsCode == '0000') return `${n}1.png`;
+        if (tlsCode == '0111') return `${n}2.png`;
+        if (tlsCode == '1101') return `${n}3.png`;
+        if (tlsCode == '1110') return `${n}4.png`;
+        if (tlsCode == '1011') return `${n}5.png`;
+        if (tlsCode == '0110') return `${n}6.png`;
+        if (tlsCode == '1001') return `${n}7.png`;
+        if (tlsCode == '0101') return `${n}8.png`;
+        if (tlsCode == '1100') return `${n}9.png`;
+        if (tlsCode == '1010') return `${n}10.png`;
+        if (tlsCode == '0011') return `${n}11.png`;
+        if (tlsCode == '0001') return `${n}12.png`;
+        if (tlsCode == '0100') return `${n}13.png`;
+        if (tlsCode == '1000') return `${n}14.png`;
+        if (tlsCode == '0010') return `${n}15.png`;
+
+    }
 
     //! utils
     randomRange(_min, _max, _round = false) {
@@ -403,6 +453,8 @@ for (let i = 0; i < game.tileDataDim.w; i++) {
     // };
     game.tileData.push(new Array(game.tileDataDim.h).fill(game.baseTiles.get('dirt')));
 }
+
+
 
 //generates the hills
 this.smoothness = 6;
@@ -451,8 +503,8 @@ for (let i = 0; i < 10; i++) {
 }
 
 
-//test block
-game.setTile(99, 0, game.baseTiles.get('hayBale'))
+//adds platform
+game.setTile(10, 40, game.baseTiles.get('woodPlatform'))
 //generates house
 //game.generateHouse(20, 20, 5, 5, game.baseTiles.get('hayBale'))
 
