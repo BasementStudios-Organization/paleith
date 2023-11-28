@@ -1,3 +1,4 @@
+/// <reference types="./ranjs.d.ts">
 
 class Camera {
     constructor(id, _x = 0, _y = 0) {
@@ -84,10 +85,17 @@ class Entity extends Tile {
         
         
 
-        //!set cam move it smwhere else latr
-        game.camera.get(0).x += ((this.position.x - 480 + (this.hitBox.bW * 2)) - game.camera.get(0).x) / 5;
-        game.camera.get(0).y += ((-this.position.y + 270 + (this.hitBox.bH * 2)) - game.camera.get(0).y) / 10;
         
+    }
+    
+    
+}
+//entities
+
+//player class
+class Player extends Entity {
+    constructor(name, data) {
+        super(name, data)
     }
     entityPlatformerInput() {
         this.velocity.x += (game.pressedKeys.includes("d") - game.pressedKeys.includes("a")) * 5;
@@ -95,24 +103,44 @@ class Entity extends Tile {
             this.velocity.y = game.pressedKeys.includes("w") * this.physicsPresets.jumpHeight;
         }
     }
+    moveCamera() {
+        game.camera.get(0).x += ((this.position.x - 480 + (this.hitBox.bW * 2)) - game.camera.get(0).x) / 5;
+        game.camera.get(0).y += ((-this.position.y + 270 + (this.hitBox.bH * 2)) - game.camera.get(0).y) / 10;
+        
+    }
+}
+
+//cat class
+class Cat extends Entity {
+    constructor(name, data) {
+        super(name, data)
+    }
 }
 
 class Game {
+    
+
+
     /**
      * @param {CanvasRenderingContext2D} context 
      */
     constructor(context) {
         
-
-        //imgas
+        //seed prompt
+        //power ** so that it is easily customizable
+        this.seed = prompt('Please enter a seed');
+        this.seed = ((!(/^[A-z0-9\.?]*$/gmi).test(this.seed))) ? ranjs.core.int(1,2**32) : this.seed;
+        //images
         this.backgroundImage = new Image();
         this.backgroundImage.src = 'background.png';
 
         this.tileData = new Array();
         this.entityData = new Set();
         //!grass isn't gonna be an entity but i need to test this
-        this.player = new Entity('player', { id: 0, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 }});
+        //add entities
+        this.player = new Player('player', { id: 0, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 }});
         this.entityData.add(this.player);
+        this.entityData.add(new Cat('cat', { id: 1, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 }}));
 
         this.tileSetDefaults = ['leaves'];
         //gets entity player
@@ -163,18 +191,26 @@ class Game {
         };
         this.switchCamCoolDown = 0;
         
-        
+        this.basedist = new ranjs.dist.Normal(0,1)
+        this.basedist.seed(this.seed)
+        this.teraindist = new ranjs.dist.Normal(-1,1)
+        this.teraindist.seed(this.seed)
+        ranjs.core.seed(this.seed)
     }
     
     update() {
 
-        this.player.entityPhysics();
         this.player.entityPlatformerInput();
+        this.player.moveCamera();
 
-        //this.camera.get(0).vec[0] = (this.pressedKeys.includes("d") - this.pressedKeys.includes("a")) * 16;
-        //this.camera.get(0).vec[1] = (this.pressedKeys.includes("s") - this.pressedKeys.includes("w")) * 16;
-        //cameraMoveXVel -= cameraMoveXVel/20;
-        //cameraMoveYVel -= cameraMoveYVel/20;
+        //all entities
+        this.entityData.forEach(entity => {
+            entity.entityPhysics(true, 20);
+        });
+
+        
+
+        
         if (Math.abs(this.camera.get(0).vec[0]) < 0.4) this.camera.get(0).vec[0] = 0;
         if (Math.abs(this.camera.get(0).vec[1]) < 0.4) this.camera.get(0).vec[1] = 0;
         this.camera.get(0).x += this.camera.get(0).vec[0];
@@ -191,7 +227,6 @@ class Game {
         
 
         this.context.fillStyle = `hsl(240, 100, 50)`;
-        //!${-Math.round(this.camera.get(0).y/this.tH) * 4}
         this.context.fillRect(0, 0, board.width, board.height);
 
         //let cameraBorder = ((x, y, bl, bd, br, bt) => ({ x: ((x < bl) ? bl : (x > br) ? br : x), y: ((y > bd) ? bd : (y < bt) ? bt : y) }))(this.camera.get(0).x, this.camera.get(0).y, 0, 0, (this.tileDataDim.w ** 2) - board.width, -((this.tileDataDim.h ** 2) - board.height));
@@ -227,7 +262,7 @@ class Game {
         this.camSize = this.camera.get(0).size;
         this.tileDefaults.dox = ((Math.round(this.camera.get(0).x * this.camSize / (this.tW)) * (this.tW)) - (this.camera.get(0).x * this.camSize) - this.tW);// minused by tile width to avoid showing border space
         this.tileDefaults.doy = ((Math.round(this.camera.get(0).y * this.camSize / (this.tH)) * (this.tH)) - (this.camera.get(0).y * this.camSize) + board.height);
-        
+        this.tilesDrawn = 0;
         
         
         for (let dy = 0; dy < (this.tH / (this.tH / 80)) + 2; dy++) {
@@ -244,15 +279,18 @@ class Game {
                             if (drawnImage.src.endsWith('leaves.png')) drawnImage.src = 'leavesBerryVariant.png';
                         }
                         this.context.drawImage(drawnImage, this.tileDefaults.dox + (dx * this.tW), this.tileDefaults.doy + (-dy * this.tH), this.tW+0.5, this.tH+0.5); //0.5 is to fix the white lines
+                        this.tilesDrawn++;
                     }
                 }
             }
         }
     }
     drawGUI() {
-        const {round: r} = Math
-        this.context.font = 'bold 24px "Sans", "Courier", cursive'
-        this.drawTextBorder(`${r(this.camera.get(0).x/this.tW)}, ${r(Math.abs(this.camera.get(0).y/this.tH))}`, 30, 50, 'black', 'white', 2)
+        const {round: r} = Math;
+        this.context.font = 'bold 24px "Sans", "Courier", cursive';
+        this.drawTextBorder(`${r(this.camera.get(0).x/this.tW)}, ${r(Math.abs(this.camera.get(0).y/this.tH))}`, 30, 50, 'black', 'white', 2);
+        this.drawTextBorder(`Seed: ${this.seed}`, 30, 80, 'black', 'white', 2);
+        //this.drawTextBorder(`Tiles Drawn: ${this.tilesDrawn.drawn}`, 30, 110, 'black', 'white', 2);
         //this.context.fillStyle = "black";
         
         //this.context.fillText(`${r(this.camera.get(0).x/this.tW)}, ${r(Math.abs(this.camera.get(0).y/this.tH))}`, 30, 50);
@@ -274,7 +312,7 @@ class Game {
         let _y = 0;
         for (let i = 0; i < 3; i++) {
             ++_y;
-            let expand = Math.round(Math.random() * 3 - 2);
+            let expand = Math.round(this.basedist.sample(1)); // this sample will return a number 0 -> 1 favoring one in the middle using a normal distribution curve
             _x += (_x + _xOffset + expand >= 0 && _x + _xOffset + expand < this.tileDataDim.w) ? expand : 0;
             for (let h = -1; h < 3; h++) {
                 this.setTile(_x + _xOffset - 1, _y + _yOffset + h, this.baseTiles.get('log'));
@@ -286,8 +324,7 @@ class Game {
         if (_iterations > 0) this.generateTree(_x + _xOffset, _y + _yOffset, _thickness, _iterations - 1);
         else {
             for (let i = 0; i < 2; i++) {
-                
-                this.generateCircle(_x + _xOffset + Math.round(Math.random()*10)-5, _y + _yOffset, 6, this.baseTiles.get('leaves'));
+                this.generateCircle(_x + _xOffset + ranjs.core.int(0,5), _y + _yOffset, 6, this.baseTiles.get('leaves'));
             }
         }
     }
@@ -326,8 +363,8 @@ class Game {
     generateHouse(_x, _y, _w, _h, _tileType) {
         for (let i = 0; i < 3; i++) {
             game.generateSquare(_x, _y, _y + _h, _x + _w, _tileType, true, true, false);
-            _x += Math.round(Math.random()*10)-5;
-            _y += Math.round(Math.random()*10)-5;
+            _x += ranjs.core.int(0,5);
+            _y += ranjs.core.int(0,5);
         }
         //game.generateSquare(1, 1, 10, 10, _tileType, true, true, false);
     }
@@ -354,18 +391,22 @@ class Game {
         if (_x == 0 || _x >= game.tileDataDim.w) _x = 1;
         if (_y == 0) _y = 1;
         //gets the code for the tileset
-        let tlsCode = '';
-        if (_connect.includes(this.tileData[_x][_y+1])) tlsCode += '1';
-        else tlsCode += '0';
-
-        if (_connect.includes(this.tileData[_x-1][_y])) tlsCode += '1';
-        else tlsCode += '0';
-
-        if (_connect.includes(this.tileData[_x+1][_y])) tlsCode += '1';
-        else tlsCode += '0';
-
-        if (_connect.includes(this.tileData[_x][_y-1])) tlsCode += '1';
-        else tlsCode += '0';
+        let tlsCode = [
+            _connect.includes(this.tileData.at(_x)?.at(_y+1)),
+            _connect.includes(this.tileData.at(_x-1)?.at(_y)),
+            _connect.includes(this.tileData.at(_x+1)?.at(_y)),
+            _connect.includes(this.tileData.at(_x)?.at(_y-1))
+        ]
+        .map((a, ..._) => Number(a))
+        .join('')
+        /*
+        new Array(3).fill(new Array(3).fill(0)) =>
+        [
+            [0,0,0],
+            [0,0,0],
+            [0,0,0]
+        ]
+        */
         
         //gets the tileset image
         let n = _type.name;
@@ -390,8 +431,10 @@ class Game {
 
     //! utils
     randomRange(_min, _max, _round = false) {
-        return _round ? Math.round(Math.random()*(_max - _min) + _min) : Math.random()*(_max - _min) + _min;
+        return ranjs.core[_round ? 'int': 'float'](_min,_max)
     }
+
+
 
     drawTextBorder(_text, _x, _y, _color, _borderColor, _borderSize) {
         this.context.fillStyle = _borderColor;
@@ -432,29 +475,23 @@ document.addEventListener('mousemove', function (event) {
 });
 
 //tile data, very important
-//data contained in array, block data will be in json format eg). [[{},{}],[{},{}]]
-//makes chunk of dirt
 for (let i = 0; i < game.tileDataDim.w; i++) {
-    // let genCol = [];
-    // for (let v = 0; v < game.tileDataDim.w; v++) {
-    //     genCol.push(game.baseTiles.get('dirt'))
-    // };
     game.tileData.push(new Array(game.tileDataDim.h).fill(game.baseTiles.get('dirt')));
 }
 
 
 
 //generates the hills
-this.smoothness = 6;
+let smoothness = 2;
 for (let _y = 0; _y < game.tileDataDim.h; _y++) {
     for (let _x = 0; _x < game.tileDataDim.w; _x++) {
-        this.smoothness += game.randomRange(-1, 1, true);
+        smoothness += game.teraindist.sample(1);
         //avoids errors of cant div by 0
-        if (this.smoothness <= 0) this.smoothness = 1;
+        if (smoothness == 0) smoothness = 1;
         //avoids terrain from become too smooth or too steep
-        if (Math.abs(this.smoothness) > 6) this.smoothness = 10 * Math.sign(this.smoothness);
+        if (Math.abs(smoothness) > 2) smoothness = 4 * Math.sign(smoothness);
         //removes dirt by replacing it with air according to the sin wave
-        if (_y /10 > (Math.sin(2*_x/8)*Math.cos(-2.5+_x/this.smoothness)) + game.tileGenPresets.waterLvl - 6) {
+        if (_y /10 > (Math.sin(2*_x/8)*Math.cos(-2.5+_x/smoothness)) + game.tileGenPresets.waterLvl - 6) {
             game.setTile(_x, _y, game.baseTiles.get('air'));
         }
     }
@@ -481,7 +518,7 @@ for (let _y = 0; _y < game.tileDataDim.h; _y++) {
         if (
             game.tileData[_x][_y + 1] == game.baseTiles.get('air') &&
             game.tileData[_x][_y] != game.baseTiles.get('air') &&
-            Math.random() > 0.9 &&
+            ranjs.core.float(0,1) > 0.9 &&
             game.tileData[_x][_y] != game.baseTiles.get('log') &&
             game.tileData[_x][_y] != game.baseTiles.get('leaves')
         ) game.generateTree(_x, _y, 2, 4);
@@ -492,7 +529,7 @@ for (let _y = 0; _y < game.tileDataDim.h; _y++) {
 
 //generate stone in ground
 for (let i = 0; i < 10; i++) {
-    game.generateCircle(Math.round(Math.random()*game.tileDataDim.w), Math.round(Math.random()*game.tileGenPresets.waterLvl), 4, game.baseTiles.get('stone'), true)
+    game.generateCircle(ranjs.core.int(0,game.tileDataDim.w), ranjs.core.int(0,game.tileGenPresets.waterLvl), 4, game.baseTiles.get('stone'), true)
 }
 
 //generates caves
