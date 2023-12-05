@@ -19,7 +19,7 @@ app.whenReady().then(() => {
     const mainWin = new BrowserWindow({
         width, height,
         title: 'Game',
-        autoHideMenuBar: true,
+        // autoHideMenuBar: true,
         darkTheme: true,
         webPreferences: {
             nodeIntegration: true,

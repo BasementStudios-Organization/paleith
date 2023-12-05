@@ -25,8 +25,8 @@ module.exports = class Game {
         this.entityData.add(new Cat('cat', { id: 1, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 } }, this));
 
         this.tileSetDefaults = ['leaves'];
-        //gets entity player (this is redundent??? line 23)
-        // this.player = Array.from(this.entityData.values()).find((e) => e.name === 'player')
+        //gets entity player
+        //* this.player = Array.from(this.entityData.values()).find((e) => e.name === 'player')
         this.context = context;
         this.tileDefaults = {
             /** Width */         w: 80,
@@ -50,7 +50,7 @@ module.exports = class Game {
             .set('leaves', new Tile('leaves'))
             .set('woodPlatform', new Tile('woodPlatform'))
         this.pressedKeys = new Array()
-        this.tileDataDim = { w: 1000, h: 100 };
+        this.tileDataDim = { w: 50, h: 50 };
         this.tileGenPresets = {
             /** Water Level */
             waterLvl: 10,
@@ -63,6 +63,74 @@ module.exports = class Game {
         this.teraindist = new ranjs.dist.Normal(-1, 1)
         this.teraindist.seed(seed)
         ranjs.core.seed(seed)
+    }
+
+    generateTerrain() {
+        this.basedist = new ranjs.dist.Normal(0, 1)
+        this.basedist.seed(this.seed)
+        this.teraindist = new ranjs.dist.Normal(-1, 1)
+        this.teraindist.seed(this.seed)
+        ranjs.core.seed(this.seed)
+        for (let i = 0; i < this.tileDataDim.w; i++) {
+            this.tileData.push(new Array(this.tileDataDim.h).fill(this.baseTiles.get('dirt')));
+        }
+
+        //generates the hills
+        let smoothness = 2;
+        for (let _y = 0; _y < this.tileDataDim.h; _y++) {
+            for (let _x = 0; _x < this.tileDataDim.w; _x++) {
+                smoothness += this.teraindist.sample(1);
+                //avoids errors of cant div by 0
+                if (smoothness == 0) smoothness = 1;
+                //avoids terrain from become too smooth or too steep
+                if (Math.abs(smoothness) > 2) smoothness = 4 * Math.sign(smoothness);
+                //removes dirt by replacing it with air according to the sin wave
+                if (_y / 10 > (Math.sin(2 * _x / 8) * Math.cos(-2.5 + _x / smoothness)) + this.tileGenPresets.waterLvl - 6) {
+                    this.setTile(_x, _y, this.baseTiles.get('air'));
+                }
+            }
+        }
+
+        //generates grass on top
+        for (let _y = 0; _y < this.tileDataDim.h; _y++) {
+            for (let _x = 0; _x < this.tileDataDim.w; _x++) {
+                if (
+                    this.tileData[_x][_y + 1] == this.baseTiles.get('air') &&
+                    this.tileData[_x][_y] != this.baseTiles.get('air')
+                ) this.tileData[_x][_y] = this.baseTiles.get('grass');
+            }
+        }
+
+        // generates trees
+        for (let _y = 0; _y < this.tileDataDim.h; _y++) {
+            for (let _x = 0; _x < this.tileDataDim.w; _x++) {
+                if (
+                    this.tileData[_x][_y + 1] == this.baseTiles.get('air') &&
+                    this.tileData[_x][_y] != this.baseTiles.get('air') &&
+                    ranjs.core.float(0, 1) > 0.9 &&
+                    this.tileData[_x][_y] != this.baseTiles.get('log') &&
+                    this.tileData[_x][_y] != this.baseTiles.get('leaves')
+                ) this.generateTree(_x, _y, 2, 4);
+            }
+        }
+
+
+
+        //generate stone in ground
+        for (let i = 0; i < 10; i++) {
+            this.generateCircle(ranjs.core.int(0, this.tileDataDim.w), ranjs.core.int(0, this.tileGenPresets.waterLvl), 4, this.baseTiles.get('stone'), true)
+        }
+
+        //generates caves
+        for (let a = 0; a < this.randomRange(10, 20, true); a++) {
+            let x = this.randomRange(0, this.tileDataDim.w, true);
+            let y = this.tileGenPresets.waterLvl;
+            for (let i = 0; i < this.randomRange(4, 10, true); i++) {
+                this.generateCircle(x, y, this.randomRange(3, 6, true), this.baseTiles.get('air'));
+                x += this.randomRange(-5, 5, true);
+                y += this.randomRange(-5, 5, true);
+            }
+        }
     }
 
     update() {
@@ -138,8 +206,8 @@ module.exports = class Game {
 
     drawGUI() {
         const { round: r } = Math;
-        this.context.font = 'bold 24px "Sans", "Courier", cursive';
-        this.drawTextBorder(`${r(this.camera.get(0).x / this.tW)}, ${r(Math.abs(this.camera.get(0).y / this.tH))}`, 30, 50, 'black', 'white', 2);
+        this.context.font = 'bold 24px "monocraft","Sans", "Courier", cursive';
+        this.drawTextBorder(`Camera Position: ${r(this.camera.get(0).x / this.tW)}, ${r(Math.abs(this.camera.get(0).y / this.tH))}`, 30, 50, 'black', 'white', 2);
         this.drawTextBorder(`Seed: ${this.seed}`, 30, 80, 'black', 'white', 2);
         //this.drawTextBorder(`Tiles Drawn: ${this.tilesDrawn.drawn}`, 30, 110, 'black', 'white', 2);
         //this.context.fillStyle = "black";
@@ -224,13 +292,13 @@ module.exports = class Game {
         _bt += 450;
         _br += 64;
         let pointCheck = this.getTileDataIndex(_x + _bl, _y + _bt);
-        if (this.tileData[pointCheck.x][-pointCheck.y][_key] == _val) return true;
+        if (this.tileData.at(pointCheck.x)?.at(-pointCheck.y)[_key] == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _bl, _y + _bb);
-        if (this.tileData[pointCheck.x][-pointCheck.y][_key] == _val) return true;
+        if (this.tileData.at(pointCheck.x)?.at(-pointCheck.y)[_key] == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _br, _y + _bt);
-        if (this.tileData[pointCheck.x][-pointCheck.y][_key] == _val) return true;
+        if (this.tileData.at(pointCheck.x)?.at(-pointCheck.y)[_key] == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _br, _y + _bb);
-        if (this.tileData[pointCheck.x][-pointCheck.y][_key] == _val) return true;
+        if (this.tileData.at(pointCheck.x)?.at(-pointCheck.y)[_key] == _val) return true;
         return false;
     }
     //!tilesets
