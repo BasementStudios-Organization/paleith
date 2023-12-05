@@ -3,6 +3,7 @@ const Tile = require('./tile')
 const Cat = require('./cat')
 const Player = require('./player')
 const ranjs = require('../ranjs')
+const Platypus = require('./platypus')
 
 module.exports = class Game {
     /**
@@ -23,6 +24,7 @@ module.exports = class Game {
         this.player = new Player('player', { id: 0, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 } }, this);
         this.entityData.add(this.player);
         this.entityData.add(new Cat('cat', { id: 1, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 } }, this));
+        this.entityData.add(new Platypus('platypus', { id: 1, position: { x: 200, y: 3000 }, velocity: { x: 1, y: 0 } }, this));
 
         this.tileSetDefaults = ['leaves'];
         //gets entity player
