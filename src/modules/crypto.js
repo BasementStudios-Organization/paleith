@@ -11,7 +11,7 @@ class CCrypto {
     static encrypt(inputData) {
         const
             data = { iv: '', key: '', prehash: '', posthash: '', data: '' },
-            input = Buffer.from(inputData),
+            input = Buffer.from((typeof inputData !== 'string') ? (typeof inputData !== 'object') ? inputData.toString() : JSON.stringify(inputData) : inputData),
             generatedIV = crypto.randomBytes(cryptoDefaults.crypt.ivLength),
             key = crypto.randomBytes(cryptoDefaults.crypt.keyLength)
         data.prehash = crypto
@@ -52,7 +52,8 @@ class CCrypto {
                 .update(outData)
                 .digest(cryptoDefaults.encoding);
         assert.equal(data.prehash, preVerificationHash);
-        return outData.toString('utf-8')
+        const tempOut = outData.toString('utf-8')
+        return (tempOut.startsWith('{') && tempOut.endsWith('}')) ? JSON.parse(tempOut) : outData.toString('utf-8')
     }
 }
 

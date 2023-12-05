@@ -34,10 +34,23 @@ class SaveSystem {
     }
     /**
      * @param {string} filename
+     * @param {CanvasRenderingContext2D} ctx
      * @return {Game} 
      */
-    static Load(filename) {
-        
+    static Load(filename, ctx) {
+        const pathx = path.join(
+            process.env[process.platform === 'win32' ? 'APPDATA' : 'HOME'],
+            'TileEngine',
+            'Saves',
+            `${filename}.tesv`
+        )
+        const fileData = fs.readFileSync(pathx, 'utf8')
+        const strData = Crypto.decrypt(fileData)
+        const data = JSON.parse(strData)
+        const game = new Game(ctx, data.seed)
+        game.player.position = data.playerPos
+        game.tileDataDim = data.worldDimentions
+        return game
     }
 }
 
