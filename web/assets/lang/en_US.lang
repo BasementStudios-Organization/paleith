@@ -1,0 +1,4 @@
+base.block.grass=Grass
+base.block.wood=Wooden Log
+base.entity.cat=Cat
+base.entity.player=Player

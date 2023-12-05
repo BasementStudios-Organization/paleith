@@ -1,0 +1,23 @@
+<body>
+    <p id="label">Enter A Seed:</p>
+    <p>
+        <input type="text" id="data" value="">
+        <input type="submit" value="Submit" onclick="response()">
+        <input type="button" value="Cancel" onclick="cancel()">
+    </p>
+
+    <script>
+        function cancel() {
+            this.close();
+        }
+
+        function response() {
+            window.port.postMessage({env: 'seed', seed: document.getElementById("data").value})
+            this.close();
+        }
+        
+        document.getElementById('data').onkeypress = (e) => {
+            if (e.keyCode == 13) response();
+        }
+    </script>
+</body>
