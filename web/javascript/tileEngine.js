@@ -1,8 +1,5 @@
 /// <reference types="../@types/ranjs.d.ts">
 /// <reference types="../@types/utils.d.ts>"
-
-const Remote = require('@electron/remote')
-
 const Game = require(`./javascript/class/game`)
 
 port
