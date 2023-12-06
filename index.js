@@ -82,6 +82,8 @@ app.whenReady().then(() => {
 
     mainWin.loadFile(path.join(__dirname, 'temp', 'index.html'))
 
+    mainWin.maximize()
+
     mainWin.webContents.ipc.handle('web:close', _ => mainWin.close())
     mainWin.webContents.ipc.handle('web:reseed', _ => generateSeedWindow(mainWin))
 
