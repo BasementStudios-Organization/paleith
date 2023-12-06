@@ -170,7 +170,7 @@ module.exports = class Game {
     }
     drawEntity() {
         this.entityData.forEach(entity => {
-            this.context.drawImage(entity.image, (entity.position.x - this.camera.get(0).x) * this.camera.get(0).size, (-entity.position.y - this.camera.get(0).y) * this.camera.get(0).size + 540, (this.tW / 20) * this.player.dim.w, (this.tH / 20) * this.player.dim.h);
+            this.context.drawImage(entity.image, (entity.position.x - this.camera.get(0).x) * this.camera.get(0).size, (-entity.position.y - this.camera.get(0).y) * this.camera.get(0).size + 540, (this.tW / 20) * entity.dim.w, (this.tH / 20) * entity.dim.h);
         });
     }
     drawTiles() {

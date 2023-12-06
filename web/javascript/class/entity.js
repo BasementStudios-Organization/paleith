@@ -7,7 +7,10 @@ module.exports = class Entity extends Tile {
         this.position = Object.assign({ x: 0, y: 0 }, data.position ?? {});
         this.velocity = Object.assign({ x: 0, y: 0 }, data.velocity ?? {})
         this.hitBox = Object.assign({ bl: 6, bb: 28, br: 14, bt: 0, bW: 14, bH: 28 }, data.hitBox ?? {})
-        this.dim = Object.assign({ w: 22, h: 28 }, data.dim ?? {});
+        this.dim = Object.assign({ w: data.width || 22, h: data.height || 28 }, data.dim ?? {});
+        //this.dim = Object.assign({ w: 22, h: 28 }, data.dim ?? {});
+        //this.dim = data.dim || { w: 22, h: 28 }; // default dimensions
+
         this.physicsPresets = Object.assign({ gravity: 0.5, friction: 0.25, jumpHeight: 20 }, data.physicsPresets ?? {});
     }
     entityPhysics(options = {}) {
