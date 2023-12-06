@@ -1,7 +1,11 @@
-const { app, BrowserWindow, MessageChannelMain } = require('electron')
+const { app, BrowserWindow, MessageChannelMain, Menu, MenuItem } = require('electron')
 const path = require('path')
 
-function generateSeedWindow(channel) {
+
+/**
+ * @param {BrowserWindow} parentWindow 
+ */
+function generateSeedWindow(parentWindow) {
     const win = new BrowserWindow({
         width: 360,
         height: 120,
@@ -20,7 +24,10 @@ function generateSeedWindow(channel) {
 
     win.loadURL(path.join(__dirname, "modules", "prompt", "index.html"))
 
-    win.webContents.postMessage('port', '*', [channel])
+    win.webContents.ipc.handle('seed:submit', (event, seed) => {
+        if (parentWindow) parentWindow.webContents.send('seed:input', seed)
+    })
+
     return win
 }
 
@@ -52,17 +59,21 @@ app.whenReady().then(() => {
         }
     })
 
-    mainWin.loadFile('web/index.html')
+    const menu = new Menu()
 
-    const mainWinMessager = new MessageChannelMain()
-    const pWinMgr = mainWinMessager.port1
-    pWinMgr.start()
-    const mWinMgr = mainWinMessager.port2
-    mWinMgr.start()
+    menu.append(new MenuItem({ label: 'Game Settings', submenu: [
+        { label: 'Reseed', click: _ => generateSeedWindow(mainWin) },
+        { label: 'Close', click: _ => mainWin.close() },
+        { label: 'Dev Tools', click: _ => mainWin.webContents.openDevTools() },
+        { label: 'Reset', click: _ => mainWin.webContents.send('web:reset')}
+    ] }))
+
+    mainWin.setMenu(menu)
+
+    mainWin.loadFile('web/index.html')
 
     mainWin.webContents.ipc.handle('web:close', _ => mainWin.close())
     mainWin.webContents.ipc.handle('web:reseed', _ => generateSeedWindow(pWinMgr))
 
-    generateSeedWindow(pWinMgr)
-    mainWin.webContents.postMessage('port', '*', [mWinMgr])
+    generateSeedWindow(mainWin)
 })

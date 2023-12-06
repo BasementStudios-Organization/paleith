@@ -1,18 +1,20 @@
+const ranjs = require('../ranjs/index.js')
+
 const Camera = require('./camera')
 const Tile = require('./tile')
 const Cat = require('./cat')
 const Player = require('./player')
-const ranjs = require('../ranjs')
 const Platypus = require('./platypus')
 
 module.exports = class Game {
     /**
      * @param {CanvasRenderingContext2D} context 
+     * @param {number | string} seed
      */
     constructor(context, seed) {
         //seed prompt
         //power ** so that it is easily customizable
-        this.seed = (((/^[^\w.\?\:\\\/\<\>\(\)\[\]\"\'\`\-\_\+\=\!\@\#\$\%\^\&\*\~\{\}\|]*$/gmi).test(seed))) ? ranjs.core.int(1, 2 ** 32) : seed;
+        this.seed = (((/^[^\w.\?\:\\\/\<\>\(\)\[\]\"\'\`\-\_\+\=\!\@\#\$\%\^\&\*\~\{\}\|]*$/gmi).test(String(seed)))) ? ranjs.core.int(1, 2 ** 32) : seed;
         //images
         this.backgroundImage = new Image();
         this.backgroundImage.src = './assets/images/background.png';

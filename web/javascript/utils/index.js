@@ -1,4 +1,4 @@
-class Utils {
+module.exports = class Utils {
     static FPS(frames) {
         return 1000 / frames
     }

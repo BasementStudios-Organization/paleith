@@ -1,19 +1,15 @@
 <body>
     <p id="label">Enter A Seed:</p>
     <p>
-        <input type="text" id="data" value="">
+        <input type="text"   value=""       id="data">
         <input type="submit" value="Submit" onclick="response()">
-        <input type="button" value="Cancel" onclick="cancel()">
+        <input type="button" value="Cancel" onclick="close()">
     </p>
 
     <script>
-        function cancel() {
-            this.close();
-        }
-
         function response() {
-            port.postMessage({env: 'seed', seed: document.getElementById("data").value})
-            this.close();
+            ipc.invoke('seed:submit', document.getElementById('data').value);
+            close();
         }
         
         document.getElementById('data').onkeypress = (e) => {
