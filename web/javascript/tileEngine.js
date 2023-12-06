@@ -26,6 +26,7 @@ port
 
         document.addEventListener('keydown', function (event) {
             if (event.code === 'Escape') close()
+            if (event.code === 'KeyM') reseed()
             if (event.code === 'KeyR') {
                 game.generateTerrain()
                 game.player.position = Object.assign(game.player.position, { x: 100, y: 3000 })

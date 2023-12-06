@@ -6,6 +6,7 @@ ipcRenderer.on(
         globalThis.port = e.ports[0]
         globalThis.ipc = ipcRenderer
         globalThis.close = () => ipcRenderer.invoke('web:close')
+        globalThis.reseed = () => ipcRenderer.invoke('web:reseed')
     }
 )
 

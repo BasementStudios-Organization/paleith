@@ -60,11 +60,6 @@ module.exports = class Game {
             hillExtreme: 4
         };
         this.switchCamCoolDown = 0;
-        this.basedist = new ranjs.dist.Normal(0, 1)
-        this.basedist.seed(seed)
-        this.teraindist = new ranjs.dist.Normal(-1, 1)
-        this.teraindist.seed(seed)
-        ranjs.core.seed(seed)
     }
 
     generateTerrain() {

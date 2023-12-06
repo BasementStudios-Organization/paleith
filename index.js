@@ -1,6 +1,29 @@
 const { app, BrowserWindow, MessageChannelMain } = require('electron')
 const path = require('path')
 
+function generateSeedWindow(channel) {
+    const win = new BrowserWindow({
+        width: 360,
+        height: 120,
+        parent: BrowserWindow.getFocusedWindow(),
+        modal: true,
+        alwaysOnTop: true,
+        title: 'Enter A Seed',
+        autoHideMenuBar: true,
+        webPreferences: {
+            contextIsolation: false,
+            nodeIntegration: true,
+            sandbox: false,
+            preload: path.join(__dirname, 'server', 'promptpre.js')
+        }
+    })
+
+    win.loadURL(path.join(__dirname, "modules", "prompt", "index.html"))
+
+    win.webContents.postMessage('port', '*', [channel])
+    return win
+}
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
 })
@@ -31,24 +54,6 @@ app.whenReady().then(() => {
 
     mainWin.loadFile('web/index.html')
 
-    const promptWindow = new BrowserWindow({
-        width: 360,
-        height: 120,
-        parent: BrowserWindow.getFocusedWindow(),
-        modal: true,
-        alwaysOnTop: true,
-        title: 'Enter A Seed',
-        autoHideMenuBar: true,
-        webPreferences: {
-            contextIsolation: false,
-            nodeIntegration: true,
-            sandbox: false,
-            preload: path.join(__dirname, 'server', 'promptpre.js')
-        }
-    })
-
-    promptWindow.loadURL(path.join(__dirname, "modules", "prompt", "index.html"))
-
     const mainWinMessager = new MessageChannelMain()
     const pWinMgr = mainWinMessager.port1
     pWinMgr.start()
@@ -56,7 +61,8 @@ app.whenReady().then(() => {
     mWinMgr.start()
 
     mainWin.webContents.ipc.handle('web:close', _ => mainWin.close())
+    mainWin.webContents.ipc.handle('web:reseed', _ => generateSeedWindow(pWinMgr))
 
-    promptWindow.webContents.postMessage('port', '*', [pWinMgr])
+    generateSeedWindow(pWinMgr)
     mainWin.webContents.postMessage('port', '*', [mWinMgr])
 })

@@ -12,7 +12,7 @@
         }
 
         function response() {
-            window.port.postMessage({env: 'seed', seed: document.getElementById("data").value})
+            port.postMessage({env: 'seed', seed: document.getElementById("data").value})
             this.close();
         }
         
