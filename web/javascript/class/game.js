@@ -5,6 +5,7 @@ const Tile = require('./tile')
 const Cat = require('./cat')
 const Player = require('./player')
 const Platypus = require('./platypus')
+const Entity = require('./entity')
 
 module.exports = class Game {
     /**
@@ -19,8 +20,8 @@ module.exports = class Game {
         this.backgroundImage = new Image();
         this.backgroundImage.src = '../web/assets/images/background.png';
 
-        this.tileData = new Array();
-        this.entityData = new Set();
+        /** @type {Array<Array<string>>} */ this.tileData = new Array();
+        /** @type {Set<Entity>} */ this.entityData = new Set();
         //!grass isn't gonna be an entity but i need to test this
         //add entities
         this.player = new Player('player', { id: 0, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 } }, this);
@@ -29,8 +30,6 @@ module.exports = class Game {
         this.entityData.add(new Platypus('platypus', { id: 1, position: { x: 200, y: 3000 }, velocity: { x: 1, y: 0 } }, this));
 
         this.tileSetDefaults = ['leaves'];
-        //gets entity player
-        //* this.player = Array.from(this.entityData.values()).find((e) => e.name === 'player')
         this.context = context;
         this.tileDefaults = {
             /** Width */         w: 80,
@@ -54,7 +53,7 @@ module.exports = class Game {
             .set('leaves', new Tile('leaves'))
             .set('woodPlatform', new Tile('woodPlatform'))
         this.pressedKeys = new Array()
-        this.tileDataDim = { w: 50, h: 50 };
+        this.tileDataDim = { w: 100, h: 100 };
         this.tileGenPresets = {
             /** Water Level */
             waterLvl: 10,
@@ -71,7 +70,7 @@ module.exports = class Game {
         this.teraindist.seed(this.seed)
         ranjs.core.seed(this.seed)
         for (let i = 0; i < this.tileDataDim.w; i++) {
-            this.tileData.push(new Array(this.tileDataDim.h).fill(this.baseTiles.get('dirt')));
+            this.tileData.push(new Array(this.tileDataDim.h).fill('dirt'));
         }
 
         //generates the hills
@@ -85,7 +84,7 @@ module.exports = class Game {
                 if (Math.abs(smoothness) > 2) smoothness = 4 * Math.sign(smoothness);
                 //removes dirt by replacing it with air according to the sin wave
                 if (_y / 10 > (Math.sin(2 * _x / 8) * Math.cos(-2.5 + _x / smoothness)) + this.tileGenPresets.waterLvl - 6) {
-                    this.setTile(_x, _y, this.baseTiles.get('air'));
+                    this.setTile(_x, _y, 'air');
                 }
             }
         }
@@ -94,9 +93,9 @@ module.exports = class Game {
         for (let _y = 0; _y < this.tileDataDim.h; _y++) {
             for (let _x = 0; _x < this.tileDataDim.w; _x++) {
                 if (
-                    this.tileData[_x][_y + 1] == this.baseTiles.get('air') &&
-                    this.tileData[_x][_y] != this.baseTiles.get('air')
-                ) this.tileData[_x][_y] = this.baseTiles.get('grass');
+                    this.tileData[_x][_y + 1] == 'air' &&
+                    this.tileData[_x][_y] != 'air'
+                ) this.tileData[_x][_y] = 'grass';
             }
         }
 
@@ -104,11 +103,11 @@ module.exports = class Game {
         for (let _y = 0; _y < this.tileDataDim.h; _y++) {
             for (let _x = 0; _x < this.tileDataDim.w; _x++) {
                 if (
-                    this.tileData[_x][_y + 1] == this.baseTiles.get('air') &&
-                    this.tileData[_x][_y] != this.baseTiles.get('air') &&
+                    this.tileData[_x][_y + 1] == 'air' &&
+                    this.tileData[_x][_y] != 'air' &&
                     ranjs.core.float(0, 1) > 0.9 &&
-                    this.tileData[_x][_y] != this.baseTiles.get('log') &&
-                    this.tileData[_x][_y] != this.baseTiles.get('leaves')
+                    this.tileData[_x][_y] != 'log' &&
+                    this.tileData[_x][_y] != 'leaves'
                 ) this.generateTree(_x, _y, 2, 4);
             }
         }
@@ -117,7 +116,7 @@ module.exports = class Game {
 
         //generate stone in ground
         for (let i = 0; i < 10; i++) {
-            this.generateCircle(ranjs.core.int(0, this.tileDataDim.w), ranjs.core.int(0, this.tileGenPresets.waterLvl), 4, this.baseTiles.get('stone'), true)
+            this.generateCircle(ranjs.core.int(0, this.tileDataDim.w), ranjs.core.int(0, this.tileGenPresets.waterLvl), 4, 'stone', true)
         }
 
         //generates caves
@@ -125,7 +124,7 @@ module.exports = class Game {
             let x = this.randomRange(0, this.tileDataDim.w, true);
             let y = this.tileGenPresets.waterLvl;
             for (let i = 0; i < this.randomRange(4, 10, true); i++) {
-                this.generateCircle(x, y, this.randomRange(3, 6, true), this.baseTiles.get('air'));
+                this.generateCircle(x, y, this.randomRange(3, 6, true), 'air');
                 x += this.randomRange(-5, 5, true);
                 y += this.randomRange(-5, 5, true);
             }
@@ -162,8 +161,7 @@ module.exports = class Game {
         this.drawTiles();
         this.drawEntity()
         this.drawGUI();
-        if (this.pressedKeys.includes("click")) this.setTile(Math.round(this.getMouseCameraPosition(0).x / this.tW), Math.round(Math.abs(this.getMouseCameraPosition(0).y / this.tH)), this.baseTiles.get('air'), true);
-
+        if (this.pressedKeys.includes("click")) this.setTile(Math.round(this.getMouseCameraPosition(0).x / this.tW), Math.round(Math.abs(this.getMouseCameraPosition(0).y / this.tH)), 'air', true);
     }
 
     //! entity position is in the top left corner of the entity
@@ -188,11 +186,11 @@ module.exports = class Game {
                     let cTX = dx + Math.round(this.camera.get(0).x * this.camSize / this.tW) - 1;
                     let cTY = dy - Math.round(this.camera.get(0).y * this.camSize / this.tH) - 1
                     let currentTile = this.tileData[cTX][cTY]; //DEBUG needs to check if has an image key
-                    if (currentTile && currentTile != this.baseTiles.get('air')) {
-                        let drawnImage = currentTile.image;
-                        if (currentTile == this.baseTiles.get('leaves')) {
+                    if (currentTile && currentTile != 'air') {
+                        let drawnImage = this.baseTiles.get(currentTile).image;
+                        if (currentTile == 'leaves') {
                             drawnImage = new Image();
-                            drawnImage.src = this.getTilesetImage(cTX, cTY, currentTile, [this.baseTiles.get('leaves'), this.baseTiles.get('log'), this.baseTiles.get('grass')]);
+                            drawnImage.src = this.getTilesetImage(cTX, cTY, currentTile, ['leaves', 'log', 'grass']);
                             if (drawnImage.src.endsWith('leaves.png')) drawnImage.src = '../web/assets/images/leavesBerryVariant.png';
                         }
                         this.context.drawImage(drawnImage, this.tileDefaults.dox + (dx * this.tW), this.tileDefaults.doy + (-dy * this.tH), this.tW + 0.5, this.tH + 0.5); //0.5 is to fix the white lines
@@ -219,12 +217,12 @@ module.exports = class Game {
     getMouseCameraPosition = (id) => ({ x: this.mouse.x + this.camera.get(id).x - 40, y: this.mouse.y + this.camera.get(id).y - 500 });
 
     setTile(_x, _y, _tile, _overwrite = true) {
-        if (_x >= 0 && _x < this.tileDataDim.w && _y >= 0 && _y < this.tileDataDim.h && (_overwrite == true || this.tileData[_x][_y] == this.baseTiles.get('air'))) {
+        if (_x >= 0 && _x < this.tileDataDim.w && _y >= 0 && _y < this.tileDataDim.h && (_overwrite == true || this.tileData[_x][_y] == 'air')) {
             this.tileData[_x][_y] = _tile;
         }
     }
     generateTree(_xOffset, _yOffset, _thickness, _iterations) {
-        this.setTile(_xOffset, _yOffset, this.baseTiles.get('log'))
+        this.setTile(_xOffset, _yOffset, 'log')
         let _x = 0;
         let _y = 0;
         for (let i = 0; i < 3; i++) {
@@ -232,16 +230,16 @@ module.exports = class Game {
             let expand = Math.round(this.basedist.sample(1)); // this sample will return a number 0 -> 1 favoring one in the middle using a normal distribution curve
             _x += (_x + _xOffset + expand >= 0 && _x + _xOffset + expand < this.tileDataDim.w) ? expand : 0;
             for (let h = -1; h < 3; h++) {
-                this.setTile(_x + _xOffset - 1, _y + _yOffset + h, this.baseTiles.get('log'));
-                this.setTile(_x + _xOffset, _y + _yOffset + h, this.baseTiles.get('log'));
-                this.setTile(_x + _xOffset + 1, _y + _yOffset + h, this.baseTiles.get('log'));
+                this.setTile(_x + _xOffset - 1, _y + _yOffset + h, 'log');
+                this.setTile(_x + _xOffset, _y + _yOffset + h, 'log');
+                this.setTile(_x + _xOffset + 1, _y + _yOffset + h, 'log');
             }
 
         }
         if (_iterations > 0) this.generateTree(_x + _xOffset, _y + _yOffset, _thickness, _iterations - 1);
         else {
             for (let i = 0; i < 2; i++) {
-                this.generateCircle(_x + _xOffset + ranjs.core.int(0, 5), _y + _yOffset, 6, this.baseTiles.get('leaves'));
+                this.generateCircle(_x + _xOffset + ranjs.core.int(0, 5), _y + _yOffset, 6, 'leaves');
             }
         }
     }
@@ -265,9 +263,9 @@ module.exports = class Game {
         for (let y = _b; y < _height; y++) {
             for (let x = _l; x < _width; x++) {
                 if (_replace && _makeHollow && x != _l && x != _r && y != _b && y != _t) {
-                    this.setTile(x, y, this.baseTiles.get('air'));
+                    this.setTile(x, y, 'air');
                 }
-                if ((!_hollow || x == _l || x == _r || y == _b || y == _t) && (_replace || this.tileData[x][y] == this.baseTiles.get('air'))) {
+                if ((!_hollow || x == _l || x == _r || y == _b || y == _t) && (_replace || this.tileData[x][y] == 'air')) {
                     this.setTile(x, y, _tileType);
                 }
             }
@@ -285,19 +283,20 @@ module.exports = class Game {
     //! collision detection
 
     getTileDataIndex = (x, y) => ({ x: Math.round((x + 40) / this.tileDefaults.w) - 1, y: -Math.round((y + 60) / this.tileDefaults.h) + 7 });
-
+    getTileFromPosition = (x, y) => this.baseTiles.get((this.tileData.at(x) ?? []).at(y));
+    getTileKeyFromPosition = (x, y, key) => (Object.entries(this.getTileFromPosition(x, y) ?? {}).find(([k]) => k == key) ?? [null, '']).at(1);
     hitBoxCollision(_x, _y, _bl, _bb, _br, _bt, _key = 'solid', _val = true) {
         _bb += 320;
         _bt += 450;
         _br += 64;
         let pointCheck = this.getTileDataIndex(_x + _bl, _y + _bt);
-        if (this.tileData.at(pointCheck.x)?.at(-pointCheck.y)[_key] == _val) return true;
+        if (this.getTileKeyFromPosition(pointCheck.x, -pointCheck.y, _key) == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _bl, _y + _bb);
-        if (this.tileData.at(pointCheck.x)?.at(-pointCheck.y)[_key] == _val) return true;
+        if (this.getTileKeyFromPosition(pointCheck.x, -pointCheck.y, _key) == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _br, _y + _bt);
-        if (this.tileData.at(pointCheck.x)?.at(-pointCheck.y)[_key] == _val) return true;
+        if (this.getTileKeyFromPosition(pointCheck.x, -pointCheck.y, _key) == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _br, _y + _bb);
-        if (this.tileData.at(pointCheck.x)?.at(-pointCheck.y)[_key] == _val) return true;
+        if (this.getTileKeyFromPosition(pointCheck.x, -pointCheck.y, _key) == _val) return true;
         return false;
     }
     //!tilesets
@@ -341,7 +340,7 @@ module.exports = class Game {
             '1000': 14,
             '0010': 15,
         }
-        return `../web/assets/images/${_type.name}${tlsCodesToNumber[tlsCode]}.png`
+        return `../web/assets/images/${this.baseTiles.get(_type).name}${tlsCodesToNumber[tlsCode]}.png`
     }
 
     //! utils
