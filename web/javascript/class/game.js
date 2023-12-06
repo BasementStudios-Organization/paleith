@@ -17,7 +17,7 @@ module.exports = class Game {
         this.seed = (((/^[^\w.\?\:\\\/\<\>\(\)\[\]\"\'\`\-\_\+\=\!\@\#\$\%\^\&\*\~\{\}\|]*$/gmi).test(String(seed)))) ? ranjs.core.int(1, 2 ** 32) : seed;
         //images
         this.backgroundImage = new Image();
-        this.backgroundImage.src = './assets/images/background.png';
+        this.backgroundImage.src = '../web/assets/images/background.png';
 
         this.tileData = new Array();
         this.entityData = new Set();
@@ -193,7 +193,7 @@ module.exports = class Game {
                         if (currentTile == this.baseTiles.get('leaves')) {
                             drawnImage = new Image();
                             drawnImage.src = this.getTilesetImage(cTX, cTY, currentTile, [this.baseTiles.get('leaves'), this.baseTiles.get('log'), this.baseTiles.get('grass')]);
-                            if (drawnImage.src.endsWith('leaves.png')) drawnImage.src = './assets/images/leavesBerryVariant.png';
+                            if (drawnImage.src.endsWith('leaves.png')) drawnImage.src = '../web/assets/images/leavesBerryVariant.png';
                         }
                         this.context.drawImage(drawnImage, this.tileDefaults.dox + (dx * this.tW), this.tileDefaults.doy + (-dy * this.tH), this.tW + 0.5, this.tH + 0.5); //0.5 is to fix the white lines
                         this.tilesDrawn++;
@@ -341,7 +341,7 @@ module.exports = class Game {
             '1000': 14,
             '0010': 15,
         }
-        return `./assets/images/${_type.name}${tlsCodesToNumber[tlsCode]}.png`
+        return `../web/assets/images/${_type.name}${tlsCodesToNumber[tlsCode]}.png`
     }
 
     //! utils

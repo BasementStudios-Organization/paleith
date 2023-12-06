@@ -1,6 +1,7 @@
 const { app, BrowserWindow, MessageChannelMain, Menu, MenuItem } = require('electron')
 const path = require('path')
-
+const pug = require('pug')
+const fs = require('fs')
 
 /**
  * @param {BrowserWindow} parentWindow 
@@ -61,19 +62,25 @@ app.whenReady().then(() => {
 
     const menu = new Menu()
 
-    menu.append(new MenuItem({ label: 'Game Settings', submenu: [
-        { label: 'Reseed', click: _ => generateSeedWindow(mainWin) },
-        { label: 'Close', click: _ => mainWin.close() },
-        { label: 'Dev Tools', click: _ => mainWin.webContents.openDevTools() },
-        { label: 'Reset', click: _ => mainWin.webContents.send('web:reset')}
-    ] }))
+    menu.append(new MenuItem({
+        label: 'Game Settings', submenu: [
+            { label: 'Reseed', click: _ => generateSeedWindow(mainWin) },
+            { label: 'Close', click: _ => mainWin.close() },
+            { label: 'Dev Tools', click: _ => mainWin.webContents.openDevTools() },
+            { label: 'Reset', click: _ => mainWin.webContents.send('web:reset') }
+        ]
+    }))
 
     mainWin.setMenu(menu)
 
-    mainWin.loadFile('web/index.html')
+    fs.writeFileSync(path.join(__dirname, 'temp', 'index.html'), pug.renderFile(path.join(__dirname, 'views', 'index.pug'), { pretty: true }))
+
+    process.on('exit', (_) => fs.unlinkSync(path.join(__dirname, 'temp', 'index.html')))
+
+    mainWin.loadFile(path.join(__dirname, 'temp', 'index.html'))
 
     mainWin.webContents.ipc.handle('web:close', _ => mainWin.close())
-    mainWin.webContents.ipc.handle('web:reseed', _ => generateSeedWindow(pWinMgr))
+    mainWin.webContents.ipc.handle('web:reseed', _ => generateSeedWindow(mainWin))
 
     generateSeedWindow(mainWin)
 })

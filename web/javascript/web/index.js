@@ -1,5 +1,5 @@
-const Game = require(`./javascript/class/game`);
-const Utils = require(`./javascript/utils/index`);
+const Game = require(`../web/javascript/class/game`);
+const Utils = require(`../web/javascript/utils/index`);
 
 let loop;
 
