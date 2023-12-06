@@ -1,7 +1,8 @@
-const { app, BrowserWindow, MessageChannelMain, Menu, MenuItem } = require('electron')
+const { app, BrowserWindow, Menu, MenuItem } = require('electron')
 const path = require('path')
 const pug = require('pug')
-const fs = require('fs')
+const fs = require('fs-extra')
+const ss = require('./lib/saveSys')
 
 /**
  * @param {BrowserWindow} parentWindow 
@@ -73,9 +74,11 @@ app.whenReady().then(() => {
 
     mainWin.setMenu(menu)
 
+    fs.ensureDir(path.join(__dirname, 'temp'))
+
     fs.writeFileSync(path.join(__dirname, 'temp', 'index.html'), pug.renderFile(path.join(__dirname, 'views', 'index.pug'), { pretty: true }))
 
-    process.on('exit', (_) => fs.unlinkSync(path.join(__dirname, 'temp', 'index.html')))
+    process.on('exit', ss.deleteCallback(path.join(__dirname, 'temp', 'index.html')))
 
     mainWin.loadFile(path.join(__dirname, 'temp', 'index.html'))
 
