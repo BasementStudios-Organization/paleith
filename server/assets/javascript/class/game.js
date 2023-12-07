@@ -169,9 +169,15 @@ module.exports = class Game {
     }
     drawEntity() {
         this.entityData.forEach(entity => {
+            
+
             this.context.drawImage(entity.image, (entity.position.x - this.camera.get(0).x) * this.camera.get(0).size, (-entity.position.y - this.camera.get(0).y) * this.camera.get(0).size, (this.tW / 20) * entity.dim.w, (this.tH / 20) * entity.dim.h);
+            //this.context.drawImage(entity.image, player.position.x - this.camera.get(0).x, 2020 - this.camera.get(0).y, 5, 5)
         });
     }
+
+    
+
     drawTiles() {
         this.camSize = this.camera.get(0).size;
         this.tileDefaults.dox = ((Math.round(this.camera.get(0).x * this.camSize / (this.tW)) * (this.tW)) - (this.camera.get(0).x * this.camSize) - this.tW);// minused by tile width to avoid showing border space
@@ -285,10 +291,10 @@ module.exports = class Game {
     getTileFromPosition = (x, y) => this.baseTiles.get((this.tileData.at(x) ?? []).at(y));
     getTileKeyFromPosition = (x, y, key, _def= true) => (Object.entries(this.getTileFromPosition(x, y) ?? {}).find(([k]) => k == key) ?? [null, _def]).at(1);
     hitBoxCollision(_x, _y, _bl, _bb, _br, _bt, _key = `solid`, _val = true) {
-        _bb += 440;
-        _bt += 440;
-        _br += -84;
-        _bl += -84
+        _bb += 350;
+        _bt += 360;
+        _br += -85;
+        _bl += -80;
         let pointCheck = this.getTileDataIndex(_x + _bl, _y + _bt);
         if (this.getTileKeyFromPosition(pointCheck.x, -pointCheck.y, _key) == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _bl, _y + _bb);
