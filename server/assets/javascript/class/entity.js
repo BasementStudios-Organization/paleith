@@ -1,4 +1,4 @@
-const Tile = require('./tile')
+const Tile = require(`${process.cwd()}/server/assets/javascript/class/tile`)
 
 module.exports = class Entity extends Tile {
     constructor(name, data, game) {
@@ -6,7 +6,7 @@ module.exports = class Entity extends Tile {
         this.id = data.id || 0;
         this.position = Object.assign({ x: 0, y: 0 }, data.position ?? {});
         this.velocity = Object.assign({ x: 0, y: 0 }, data.velocity ?? {})
-        this.hitBox = Object.assign({ bl: 6, bb: 28, br: 14, bt: 0, bW: 14, bH: 28 }, data.hitBox ?? {})
+        this.hitBox = Object.assign({ bl: data.bl || 0, bb: data.bb || 1, br: data.br || 1, bt: data.bt || 0, bW: data.bW || 1, bH: data.bH || 1 }, data.hitBox ?? {})
         this.dim = Object.assign({ w: data.width || 22, h: data.height || 28 }, data.dim ?? {});
         //this.dim = Object.assign({ w: 22, h: 28 }, data.dim ?? {});
         //this.dim = data.dim || { w: 22, h: 28 }; // default dimensions

@@ -2,7 +2,7 @@ module.exports = class Tile {
     constructor(name, additionalData, game) {
         this.game = game
         this.image = new Image()
-        this.image.src = `../web/assets/images/${name}.png`
+        this.image.src = `/cdn/img/${name}.png`
         this.name = name
         //! add an array of non solid preset blocks to check here
         this.solid = ['woodPlatform', 'air', 'log', 'leaves'].includes(name) ? false : true;

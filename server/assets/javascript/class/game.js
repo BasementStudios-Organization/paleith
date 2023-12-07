@@ -1,11 +1,11 @@
-const ranjs = require('../ranjs/index.js')
+const ranjs = require(`${process.cwd()}/server/assets/javascript/ranjs/index`)
 
-const Camera = require('./camera')
-const Tile = require('./tile')
-const Cat = require('./cat')
-const Player = require('./player')
-const Platypus = require('./platypus')
-const Entity = require('./entity')
+const Camera = require(`${process.cwd()}/server/assets/javascript/class/camera`)
+const Tile = require(`${process.cwd()}/server/assets/javascript/class/tile`)
+const Cat = require(`${process.cwd()}/server/assets/javascript/class/cat`)
+const Player = require(`${process.cwd()}/server/assets/javascript/class/player`)
+const Platypus = require(`${process.cwd()}/server/assets/javascript/class/platypus`)
+const Entity = require(`${process.cwd()}/server/assets/javascript/class/entity`)
 
 module.exports = class Game {
     /**
@@ -15,21 +15,21 @@ module.exports = class Game {
     constructor(context, seed) {
         //seed prompt
         //power ** so that it is easily customizable
-        this.seed = (((/^[^\w.\?\:\\\/\<\>\(\)\[\]\"\'\`\-\_\+\=\!\@\#\$\%\^\&\*\~\{\}\|]*$/gmi).test(String(seed)))) ? ranjs.core.int(1, 2 ** 32) : seed;
+        this.seed = (((/^[^\w.\?\:\\\/\<\>\(\)\[\]\"\`\`\-\_\+\=\!\@\#\$\%\^\&\*\~\{\}\|]*$/gmi).test(String(seed)))) ? ranjs.core.int(1, 2 ** 32) : seed;
         //images
         this.backgroundImage = new Image();
-        this.backgroundImage.src = '../web/assets/images/background.png';
+        this.backgroundImage.src = `/cdn/img/background.png`;
 
         /** @type {Array<Array<string>>} */ this.tileData = new Array();
         /** @type {Set<Entity>} */ this.entityData = new Set();
-        //!grass isn't gonna be an entity but i need to test this
+        //!grass isn`t gonna be an entity but i need to test this
         //add entities
-        this.player = new Player('player', { id: 0, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 } }, this);
+        this.player = new Player(`player`, { id: 0, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 } }, this);
         this.entityData.add(this.player);
-        this.entityData.add(new Cat('cat', { id: 1, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 } }, this));
-        this.entityData.add(new Platypus('platypus', { id: 1, position: { x: 200, y: 3000 }, velocity: { x: 1, y: 0 } }, this));
-
-        this.tileSetDefaults = ['leaves'];
+        this.entityData.add(new Cat(`cat`, { id: 1, position: { x: 100, y: 3000 }, velocity: { x: 1, y: 0 } }, this));
+        this.entityData.add(new Platypus('platypus', { id: 2, position: { x: 200, y: 3000 }, velocity: { x: 1, y: 0 } }, this));
+        
+        this.tileSetDefaults = [`leaves`];
         this.context = context;
         this.tileDefaults = {
             /** Width */         w: 80,
@@ -44,14 +44,14 @@ module.exports = class Game {
         // 3X4
         /** @type {Map<string, Tile>} */
         this.baseTiles = new Map()
-            .set('grass', new Tile('grass'))
-            .set('stone', new Tile('stone'))
-            .set('hayBale', new Tile('hayBale'))
-            .set('air', new Tile('air'))
-            .set('dirt', new Tile('dirt'))
-            .set('log', new Tile('log'))
-            .set('leaves', new Tile('leaves'))
-            .set('woodPlatform', new Tile('woodPlatform'))
+            .set(`grass`, new Tile(`grass`))
+            .set(`stone`, new Tile(`stone`))
+            .set(`hayBale`, new Tile(`hayBale`))
+            .set(`air`, new Tile(`air`))
+            .set(`dirt`, new Tile(`dirt`))
+            .set(`log`, new Tile(`log`))
+            .set(`leaves`, new Tile(`leaves`))
+            .set(`woodPlatform`, new Tile(`woodPlatform`))
         this.pressedKeys = new Array()
         this.tileDataDim = { w: 100, h: 100 };
         this.tileGenPresets = {
@@ -70,7 +70,7 @@ module.exports = class Game {
         this.teraindist.seed(this.seed)
         ranjs.core.seed(this.seed)
         for (let i = 0; i < this.tileDataDim.w; i++) {
-            this.tileData.push(new Array(this.tileDataDim.h).fill('dirt'));
+            this.tileData.push(new Array(this.tileDataDim.h).fill(`dirt`));
         }
 
         //generates the hills
@@ -84,7 +84,7 @@ module.exports = class Game {
                 if (Math.abs(smoothness) > 2) smoothness = 4 * Math.sign(smoothness);
                 //removes dirt by replacing it with air according to the sin wave
                 if (_y / 10 > (Math.sin(2 * _x / 8) * Math.cos(-2.5 + _x / smoothness)) + this.tileGenPresets.waterLvl - 6) {
-                    this.setTile(_x, _y, 'air');
+                    this.setTile(_x, _y, `air`);
                 }
             }
         }
@@ -93,9 +93,9 @@ module.exports = class Game {
         for (let _y = 0; _y < this.tileDataDim.h; _y++) {
             for (let _x = 0; _x < this.tileDataDim.w; _x++) {
                 if (
-                    this.tileData[_x][_y + 1] == 'air' &&
-                    this.tileData[_x][_y] != 'air'
-                ) this.tileData[_x][_y] = 'grass';
+                    this.tileData[_x][_y + 1] == `air` &&
+                    this.tileData[_x][_y] != `air`
+                ) this.tileData[_x][_y] = `grass`;
             }
         }
 
@@ -103,11 +103,11 @@ module.exports = class Game {
         for (let _y = 0; _y < this.tileDataDim.h; _y++) {
             for (let _x = 0; _x < this.tileDataDim.w; _x++) {
                 if (
-                    this.tileData[_x][_y + 1] == 'air' &&
-                    this.tileData[_x][_y] != 'air' &&
+                    this.tileData[_x][_y + 1] == `air` &&
+                    this.tileData[_x][_y] != `air` &&
                     ranjs.core.float(0, 1) > 0.9 &&
-                    this.tileData[_x][_y] != 'log' &&
-                    this.tileData[_x][_y] != 'leaves'
+                    this.tileData[_x][_y] != `log` &&
+                    this.tileData[_x][_y] != `leaves`
                 ) this.generateTree(_x, _y, 2, 4);
             }
         }
@@ -116,7 +116,7 @@ module.exports = class Game {
 
         //generate stone in ground
         for (let i = 0; i < 10; i++) {
-            this.generateCircle(ranjs.core.int(0, this.tileDataDim.w), ranjs.core.int(0, this.tileGenPresets.waterLvl), 4, 'stone', true)
+            this.generateCircle(ranjs.core.int(0, this.tileDataDim.w), ranjs.core.int(0, this.tileGenPresets.waterLvl), 4, `stone`, true)
         }
 
         //generates caves
@@ -124,7 +124,7 @@ module.exports = class Game {
             let x = this.randomRange(0, this.tileDataDim.w, true);
             let y = this.tileGenPresets.waterLvl;
             for (let i = 0; i < this.randomRange(4, 10, true); i++) {
-                this.generateCircle(x, y, this.randomRange(3, 6, true), 'air');
+                this.generateCircle(x, y, this.randomRange(3, 6, true), `air`);
                 x += this.randomRange(-5, 5, true);
                 y += this.randomRange(-5, 5, true);
             }
@@ -161,7 +161,7 @@ module.exports = class Game {
         this.drawTiles();
         this.drawEntity()
         this.drawGUI();
-        if (this.pressedKeys.includes("click")) this.setTile(Math.round(this.getMouseCameraPosition(0).x / this.tW), Math.round(Math.abs(this.getMouseCameraPosition(0).y / this.tH)), 'air', true);
+        if (this.pressedKeys.includes("click")) this.setTile(Math.round(this.getMouseCameraPosition(0).x / this.tW), Math.round(Math.abs(this.getMouseCameraPosition(0).y / this.tH)), `air`, true);
     }
 
     //! entity position is in the top left corner of the entity
@@ -170,7 +170,7 @@ module.exports = class Game {
     }
     drawEntity() {
         this.entityData.forEach(entity => {
-            this.context.drawImage(entity.image, (entity.position.x - this.camera.get(0).x) * this.camera.get(0).size, (-entity.position.y - this.camera.get(0).y) * this.camera.get(0).size + 540, (this.tW / 20) * entity.dim.w, (this.tH / 20) * entity.dim.h);
+            this.context.drawImage(entity.image, (entity.position.x - this.camera.get(0).x) * this.camera.get(0).size, (-entity.position.y - this.camera.get(0).y) * this.camera.get(0).size, (this.tW / 20) * entity.dim.w, (this.tH / 20) * entity.dim.h);
         });
     }
     drawTiles() {
@@ -186,12 +186,12 @@ module.exports = class Game {
                     let cTX = dx + Math.round(this.camera.get(0).x * this.camSize / this.tW) - 1;
                     let cTY = dy - Math.round(this.camera.get(0).y * this.camSize / this.tH) - 1
                     let currentTile = this.tileData[cTX][cTY]; //DEBUG needs to check if has an image key
-                    if (currentTile && currentTile != 'air') {
+                    if (currentTile && currentTile != `air`) {
                         let drawnImage = this.baseTiles.get(currentTile).image;
-                        if (currentTile == 'leaves') {
+                        if (currentTile == `leaves`) {
                             drawnImage = new Image();
-                            drawnImage.src = this.getTilesetImage(cTX, cTY, currentTile, ['leaves', 'log', 'grass']);
-                            if (drawnImage.src.endsWith('leaves.png')) drawnImage.src = '../web/assets/images/leavesBerryVariant.png';
+                            drawnImage.src = this.getTilesetImage(cTX, cTY, currentTile, [`leaves`, `log`, `grass`]);
+                            if (drawnImage.src.endsWith(`leaves.png`)) drawnImage.src = `/cdn/img/leavesBerryVariant.png`;
                         }
                         this.context.drawImage(drawnImage, this.tileDefaults.dox + (dx * this.tW), this.tileDefaults.doy + (-dy * this.tH), this.tW + 0.5, this.tH + 0.5); //0.5 is to fix the white lines
                         this.tilesDrawn++;
@@ -203,10 +203,11 @@ module.exports = class Game {
 
     drawGUI() {
         const { round: r } = Math;
-        this.context.font = 'bold 24px "monocraft","Sans", "Courier", cursive';
-        this.drawTextBorder(`Camera Position: ${r(this.camera.get(0).x / this.tW)}, ${r(Math.abs(this.camera.get(0).y / this.tH))}`, 30, 50, 'black', 'white', 2);
-        this.drawTextBorder(`Seed: ${this.seed}`, 30, 80, 'black', 'white', 2);
-        //this.drawTextBorder(`Tiles Drawn: ${this.tilesDrawn.drawn}`, 30, 110, 'black', 'white', 2);
+        this.context.font = `bold 24px "monocraft","Sans", "Courier", cursive`;
+        this.drawTextBorder(`Camera Position: ${r(this.camera.get(0).x / this.tW)}, ${r(Math.abs(this.camera.get(0).y / this.tH))}`, 30, 50, `black`, `white`, 2);
+        this.drawTextBorder(`Seed: ${this.seed}`, 30, 80, `black`, `white`, 2);
+        this.drawTextBorder(`Player Position: ${this.player.position.x}, ${this.player.position.y}`, 30, 80, 'black', 'white', 2);
+        //this.drawTextBorder(`Tiles Drawn: ${this.tilesDrawn.drawn}`, 30, 110, `black`, `white`, 2);
         //this.context.fillStyle = "black";
 
         //this.context.fillText(`${r(this.camera.get(0).x/this.tW)}, ${r(Math.abs(this.camera.get(0).y/this.tH))}`, 30, 50);
@@ -217,12 +218,12 @@ module.exports = class Game {
     getMouseCameraPosition = (id) => ({ x: this.mouse.x + this.camera.get(id).x - 40, y: this.mouse.y + this.camera.get(id).y - 500 });
 
     setTile(_x, _y, _tile, _overwrite = true) {
-        if (_x >= 0 && _x < this.tileDataDim.w && _y >= 0 && _y < this.tileDataDim.h && (_overwrite == true || this.tileData[_x][_y] == 'air')) {
+        if (_x >= 0 && _x < this.tileDataDim.w && _y >= 0 && _y < this.tileDataDim.h && (_overwrite == true || this.tileData[_x][_y] == `air`)) {
             this.tileData[_x][_y] = _tile;
         }
     }
     generateTree(_xOffset, _yOffset, _thickness, _iterations) {
-        this.setTile(_xOffset, _yOffset, 'log')
+        this.setTile(_xOffset, _yOffset, `log`)
         let _x = 0;
         let _y = 0;
         for (let i = 0; i < 3; i++) {
@@ -230,16 +231,16 @@ module.exports = class Game {
             let expand = Math.round(this.basedist.sample(1)); // this sample will return a number 0 -> 1 favoring one in the middle using a normal distribution curve
             _x += (_x + _xOffset + expand >= 0 && _x + _xOffset + expand < this.tileDataDim.w) ? expand : 0;
             for (let h = -1; h < 3; h++) {
-                this.setTile(_x + _xOffset - 1, _y + _yOffset + h, 'log');
-                this.setTile(_x + _xOffset, _y + _yOffset + h, 'log');
-                this.setTile(_x + _xOffset + 1, _y + _yOffset + h, 'log');
+                this.setTile(_x + _xOffset - 1, _y + _yOffset + h, `log`);
+                this.setTile(_x + _xOffset, _y + _yOffset + h, `log`);
+                this.setTile(_x + _xOffset + 1, _y + _yOffset + h, `log`);
             }
 
         }
         if (_iterations > 0) this.generateTree(_x + _xOffset, _y + _yOffset, _thickness, _iterations - 1);
         else {
             for (let i = 0; i < 2; i++) {
-                this.generateCircle(_x + _xOffset + ranjs.core.int(0, 5), _y + _yOffset, 6, 'leaves');
+                this.generateCircle(_x + _xOffset + ranjs.core.int(0, 5), _y + _yOffset, 6, `leaves`);
             }
         }
     }
@@ -248,7 +249,7 @@ module.exports = class Game {
     generateCircle(centerX, centerY, radius, tileType) {
         for (let y = -radius; y <= radius; y++) {
             for (let x = -radius; x <= radius; x++) {
-                // Check if the point is within the circle's radius
+                // Check if the point is within the circle`s radius
                 if (x * x + y * y <= radius * radius) {
                     this.setTile(centerX + x, centerY + y, tileType);
                 }
@@ -263,9 +264,9 @@ module.exports = class Game {
         for (let y = _b; y < _height; y++) {
             for (let x = _l; x < _width; x++) {
                 if (_replace && _makeHollow && x != _l && x != _r && y != _b && y != _t) {
-                    this.setTile(x, y, 'air');
+                    this.setTile(x, y, `air`);
                 }
-                if ((!_hollow || x == _l || x == _r || y == _b || y == _t) && (_replace || this.tileData[x][y] == 'air')) {
+                if ((!_hollow || x == _l || x == _r || y == _b || y == _t) && (_replace || this.tileData[x][y] == `air`)) {
                     this.setTile(x, y, _tileType);
                 }
             }
@@ -281,14 +282,14 @@ module.exports = class Game {
         //this.generateSquare(1, 1, 10, 10, _tileType, true, true, false);
     }
     //! collision detection
-
-    getTileDataIndex = (x, y) => ({ x: Math.round((x + 40) / this.tileDefaults.w) - 1, y: -Math.round((y + 60) / this.tileDefaults.h) + 7 });
+    getTileDataIndex = (x, y) => ({ x: Math.round((x + 40) / this.tileDefaults.w), y: -Math.round((y + 60) / this.tileDefaults.h) });
     getTileFromPosition = (x, y) => this.baseTiles.get((this.tileData.at(x) ?? []).at(y));
-    getTileKeyFromPosition = (x, y, key) => (Object.entries(this.getTileFromPosition(x, y) ?? {}).find(([k]) => k == key) ?? [null, '']).at(1);
-    hitBoxCollision(_x, _y, _bl, _bb, _br, _bt, _key = 'solid', _val = true) {
-        _bb += 320;
-        _bt += 450;
-        _br += 64;
+    getTileKeyFromPosition = (x, y, key) => (Object.entries(this.getTileFromPosition(x, y) ?? {}).find(([k]) => k == key) ?? [null, ``]).at(1);
+    hitBoxCollision(_x, _y, _bl, _bb, _br, _bt, _key = `solid`, _val = true) {
+        _bb += 440;
+        _bt += 440;
+        _br += -84;
+        _bl += -84
         let pointCheck = this.getTileDataIndex(_x + _bl, _y + _bt);
         if (this.getTileKeyFromPosition(pointCheck.x, -pointCheck.y, _key) == _val) return true;
         pointCheck = this.getTileDataIndex(_x + _bl, _y + _bb);
@@ -311,7 +312,7 @@ module.exports = class Game {
             _connect.includes(this.tileData.at(_x)?.at(_y - 1))
         ]
             .map((a, ..._) => Number(a))
-            .join('')
+            .join(``)
         /*
         new Array(3).fill(new Array(3).fill(0)) =>
         [
@@ -340,12 +341,12 @@ module.exports = class Game {
             '1000': 14,
             '0010': 15,
         }
-        return `../web/assets/images/${this.baseTiles.get(_type).name}${tlsCodesToNumber[tlsCode]}.png`
+        return `/cdn/img/${this.baseTiles.get(_type).name}${tlsCodesToNumber[tlsCode]}.png`
     }
 
     //! utils
     randomRange(_min, _max, _round = false) {
-        return ranjs.core[_round ? 'int' : 'float'](_min, _max)
+        return ranjs.core[_round ? `int` : `float`](_min, _max)
     }
 
 
