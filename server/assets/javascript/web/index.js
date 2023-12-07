@@ -1,5 +1,5 @@
-const Game = require(`${__dirname}/../class/game`);
-const Utils = require(`${__dirname}/../utils/index`);
+const Game = require(`${process.cwd()}/server/assets/javascript/class/game`);
+const Utils = require(`${process.cwd()}/server/assets/javascript/utils/index`);
 
 let loop;
 

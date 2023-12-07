@@ -2,7 +2,10 @@ const router = require('express').Router()
 
 router
     .get('/', (req, res) => {
-        res.render('index.pug', { bstyle: 'background-color: #f5f5f5;'})
+        res.render('index.pug')
+    })
+    .get('/prompt', (req, res) => {
+        res.render('prompt.pug')
     })
 
 module.exports = router

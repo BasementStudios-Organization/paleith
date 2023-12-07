@@ -1,11 +1,11 @@
-const ranjs = require(`${__dirname}/../ranjs/index`)
+const ranjs = require(`${process.cwd()}/server/assets/javascript/ranjs/index`)
 
-const Camera = require(`${__dirname}/camera`)
-const Tile = require(`${__dirname}/tile`)
-const Cat = require(`${__dirname}/cat`)
-const Player = require(`${__dirname}/player`)
-const Platypus = require(`${__dirname}/platypus`)
-const Entity = require(`${__dirname}/entity`)
+const Camera = require(`${process.cwd()}/server/assets/javascript/class/camera`)
+const Tile = require(`${process.cwd()}/server/assets/javascript/class/tile`)
+const Cat = require(`${process.cwd()}/server/assets/javascript/class/cat`)
+const Player = require(`${process.cwd()}/server/assets/javascript/class/player`)
+const Platypus = require(`${process.cwd()}/server/assets/javascript/class/platypus`)
+const Entity = require(`${process.cwd()}/server/assets/javascript/class/entity`)
 
 module.exports = class Game {
     /**
@@ -62,7 +62,6 @@ module.exports = class Game {
         };
         this.switchCamCoolDown = 0;
     }
-
     generateTerrain() {
         this.basedist = new ranjs.dist.Normal(0, 1)
         this.basedist.seed(this.seed)
@@ -284,7 +283,7 @@ module.exports = class Game {
     //! collision detection
     getTileDataIndex = (x, y) => ({ x: Math.round((x + 40) / this.tileDefaults.w), y: -Math.round((y + 60) / this.tileDefaults.h) });
     getTileFromPosition = (x, y) => this.baseTiles.get((this.tileData.at(x) ?? []).at(y));
-    getTileKeyFromPosition = (x, y, key) => (Object.entries(this.getTileFromPosition(x, y) ?? {}).find(([k]) => k == key) ?? [null, ``]).at(1);
+    getTileKeyFromPosition = (x, y, key, _def= true) => (Object.entries(this.getTileFromPosition(x, y) ?? {}).find(([k]) => k == key) ?? [null, _def]).at(1);
     hitBoxCollision(_x, _y, _bl, _bb, _br, _bt, _key = `solid`, _val = true) {
         _bb += 440;
         _bt += 440;
@@ -348,9 +347,7 @@ module.exports = class Game {
     randomRange(_min, _max, _round = false) {
         return ranjs.core[_round ? `int` : `float`](_min, _max)
     }
-
-
-
+    
     drawTextBorder(_text, _x, _y, _color, _borderColor, _borderSize) {
         this.context.fillStyle = _borderColor;
         //corners

@@ -1,4 +1,4 @@
-const Entity = require(`${__dirname}/entity`)
+const Entity = require(`${process.cwd()}/server/assets/javascript/class/entity`)
 
 module.exports = class Platypus extends Entity {
     constructor(name, data, game) {

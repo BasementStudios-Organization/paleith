@@ -1,0 +1,18 @@
+doctype html
+html
+  head
+  body
+    p#label Enter A Seed:
+    p
+      input#data(type="text" value="")
+      input(type="submit" value="Submit" onclick="response()")
+      input(type="button" value="Cancel" onclick="close()")
+    script.
+      function response() {
+        ipc.invoke('seed:submit', document.getElementById('data').value);
+        close();
+      }
+
+      document.getElementById('data').onkeypress = (e) => {
+        if (e.keyCode == 13) response();
+      }
