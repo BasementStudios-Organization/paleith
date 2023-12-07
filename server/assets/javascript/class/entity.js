@@ -1,4 +1,4 @@
-const Tile = require(`${process.cwd()}/server/assets/javascript/class/tile`)
+const Tile = require(`${__dirname}/tile`)
 
 module.exports = class Entity extends Tile {
     constructor(name, data, game) {

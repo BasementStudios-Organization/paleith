@@ -1,11 +1,11 @@
-const ranjs = require(`${process.cwd()}/server/assets/javascript/ranjs/index`)
+const ranjs = require(`${__dirname}/../ranjs/index`)
 
-const Camera = require(`${process.cwd()}/server/assets/javascript/class/camera`)
-const Tile = require(`${process.cwd()}/server/assets/javascript/class/tile`)
-const Cat = require(`${process.cwd()}/server/assets/javascript/class/cat`)
-const Player = require(`${process.cwd()}/server/assets/javascript/class/player`)
-const Platypus = require(`${process.cwd()}/server/assets/javascript/class/platypus`)
-const Entity = require(`${process.cwd()}/server/assets/javascript/class/entity`)
+const Camera = require(`${__dirname}/camera`)
+const Tile = require(`${__dirname}/tile`)
+const Cat = require(`${__dirname}/cat`)
+const Player = require(`${__dirname}/player`)
+const Platypus = require(`${__dirname}/platypus`)
+const Entity = require(`${__dirname}/entity`)
 
 module.exports = class Game {
     /**

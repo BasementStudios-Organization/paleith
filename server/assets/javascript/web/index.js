@@ -1,20 +1,19 @@
-const Game = require(`${process.cwd()}/server/assets/javascript/class/game`);
-const Utils = require(`${process.cwd()}/server/assets/javascript/utils/index`);
+const Game = require(`${__dirname}/../class/game`);
+const Utils = require(`${__dirname}/../utils/index`);
 
 let loop;
 
 onSeed((_, data) => {
-    /** @type {HTMLCanvasElement} */ const board = document.getElementById("board")
+    /** @type {HTMLCanvasElement} */
+    const board = document.getElementById("board")
     board.width = 960;
     board.height = 540;
     const context = board.getContext("2d");
     context.imageSmoothingEnabled = false;
-
     const game = new Game(context, data)
-
     const reset = (x) => {
         x.generateTerrain()
-        x.player.position = Object.assign(game.player.position, { x: 100, y: 3000 })
+        x.player.position = Object.assign(x.player.position, { x: 100, y: 3000 })
     }
 
     ipc.on('web:reset', () => reset(game))
