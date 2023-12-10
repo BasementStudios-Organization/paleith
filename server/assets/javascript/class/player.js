@@ -13,8 +13,13 @@ module.exports = class Player extends Entity {
         return this
     }
     moveCamera() {
-        this.game.camera.get(0).x += ((this.position.x - 480 / this.game.camera.get(0).size + this.hitBox.bW * 2) - this.game.camera.get(0).x) / 5;
-        this.game.camera.get(0).y += ((-this.position.y - 270 / this.game.camera.get(0).size + this.hitBox.bH * 2) - this.game.camera.get(0).y) / 10;
+        //! offset 600, 480 may not be exactly center
+        this.game.camera.get(0).x += ((this.position.x - 600 / this.game.camera.get(0).size + this.hitBox.bW * 2) - this.game.camera.get(0).x) / 5;
+        this.game.camera.get(0).y += ((-this.position.y - 480 / this.game.camera.get(0).size + this.hitBox.bH * 2) - this.game.camera.get(0).y) / 10;
+
+        //this.game.camera.get(0).x = this.position.x;
+        //this.game.camera.get(0).y = -this.position.y;
+
         return this
     }
 }

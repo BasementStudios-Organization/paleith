@@ -213,6 +213,12 @@ module.exports = class Game {
         this.drawTextBorder(`Camera Position: ${r(this.camera.get(0).x / this.tW)}, ${r(Math.abs(this.camera.get(0).y / this.tH))}`, 30, 50, `black`, `white`, 2);
         this.drawTextBorder(`Seed: ${this.seed}`, 30, 80, `black`, `white`, 2);
         this.drawTextBorder(`Player Position: ${this.player.position.x}, ${this.player.position.y}`, 30, 110, 'black', 'white', 2);
+
+        let selectedTileDisplayInv = this.getTileKeyFromPosition(Math.round(this.getMouseCameraPosition(0).x / this.tW), Math.round(Math.abs(this.getMouseCameraPosition(0).y / this.tH)), 'inventory')
+        this.drawTextBorder(`Player Position: ${selectedTileDisplayInv}`, 30, 140, 'black', 'white', 2);
+        
+        
+        
         
 
        
