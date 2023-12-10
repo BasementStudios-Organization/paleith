@@ -7,6 +7,7 @@ module.exports = class Tile {
         //! add an array of non solid preset blocks to check here
         this.solid = ['woodPlatform', 'air', 'log', 'leaves'].includes(name) ? false : true;
         this.platform = (name === 'woodPlatform') // No need for a turnary as this is a boolean logic check
+        this.inventory = new Array(9).fill('hello')
         if (additionalData) Object.entries(additionalData).forEach(([k, v]) => { this[k] = v })
     }
     breakBlock() {
